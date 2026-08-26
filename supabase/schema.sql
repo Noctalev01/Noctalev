@@ -147,3 +147,7 @@ alter table public.profiles add column if not exists email text;
 -- gamificação persistida no perfil
 alter table public.profiles add column if not exists pontos integer default 0;
 alter table public.profiles add column if not exists celebracao_vista boolean default false;
+
+-- foto "antes" (dataURL JPEG comprimido) — privada, protegida por RLS
+alter table public.profiles add column if not exists foto_antes text;
+alter table public.profiles add column if not exists foto_antes_em timestamptz;

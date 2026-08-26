@@ -5,6 +5,7 @@ import { PageShell, Logo } from "../../components/ui";
 import { load, save, resetAll } from "../../lib/store";
 import { signOut } from "../../lib/supabase";
 import { syncNow } from "../../lib/sync";
+import { statusPermissao, pedirPermissao, agendarLembretes, notificarTeste, suportaNotificacao } from "../../lib/notificacoes";
 
 export default function Config() {
   const router = useRouter();
@@ -13,6 +14,7 @@ export default function Config() {
   const [meta, setMeta] = useState("");
   const [lembrete, setLembrete] = useState("21:30");
   const [salvo, setSalvo] = useState(false);
+  const [permNotif, setPermNotif] = useState("default");
 
   useEffect(() => {
     const st = load();
@@ -21,6 +23,7 @@ export default function Config() {
     setNome(st.perfil.nome);
     setMeta(String(st.perfil.pesoMeta).replace(".", ","));
     setLembrete(st.config?.lembreteRitual || "21:30");
+    setPermNotif(statusPermissao());
   }, [router]);
 
   if (!s) return <div className="app-bg min-h-dvh" />;
@@ -33,6 +36,16 @@ export default function Config() {
     setSalvo(true);
     setTimeout(() => setSalvo(false), 2000);
     syncNow();
+    agendarLembretes(); // reagenda com a nova hora
+  }
+
+  async function ativarNotificacoes() {
+    const r = await pedirPermissao();
+    setPermNotif(r);
+    if (r === "granted") {
+      agendarLembretes();
+      await notificarTeste();
+    }
   }
 
   async function sair() {
@@ -65,6 +78,36 @@ export default function Config() {
         <button onClick={salvar} className="cta-gold w-full py-3.5 text-[15px]">
           {salvo ? "Salvo! ✅" : "Salvar alterações"}
         </button>
+      </div>
+
+      {/* NOTIFICAÇÕES */}
+      <div className="card mt-4 p-5">
+        <div className="text-[15px] font-extrabold">🔔 Notificações</div>
+        {!suportaNotificacao() ? (
+          <div className="text-[12.5px] text-sub font-semibold mt-2 leading-relaxed">
+            Seu navegador não suporta notificações. 💡 Instale o app na tela inicial (Android/Chrome) para ativá-las.
+          </div>
+        ) : permNotif === "granted" ? (
+          <>
+            <div className="text-[13px] text-green font-bold mt-2">✅ Ativadas! Você receberá o lembrete do ritual às {lembrete}.</div>
+            <button onClick={() => notificarTeste()} className="opt-btn w-full py-3 mt-3 text-[13.5px] font-bold">
+              Enviar notificação de teste
+            </button>
+          </>
+        ) : permNotif === "denied" ? (
+          <div className="text-[12.5px] text-sub font-semibold mt-2 leading-relaxed">
+            ❌ As notificações estão bloqueadas no seu aparelho. Para reativar: configurações do navegador → Notificações → permita o NoctaLev.
+          </div>
+        ) : (
+          <>
+            <div className="text-[12.5px] text-sub2 font-semibold mt-2 leading-relaxed">
+              Receba um lembrete carinhoso na hora do seu ritual noturno — quem recebe lembrete mantém o streak 🔥
+            </div>
+            <button onClick={ativarNotificacoes} className="cta-gold w-full py-3.5 mt-3 text-[14.5px]">
+              Ativar lembretes 🔔
+            </button>
+          </>
+        )}
       </div>
 
       <a href={s.config?.suporte || "#"} target="_blank" rel="noreferrer" className="card block mt-4 p-4 text-center text-[14.5px] font-extrabold text-lilac">

@@ -5,10 +5,12 @@ import Link from "next/link";
 import { PageShell, Logo, Ring, Sparkline } from "../components/ui";
 import {
   load, saudacao, diaProtocolo, scoreSono, pesoPerdido, pesosOrdenados,
-  progressao, calcStreak, hojeSP, verificarDesbloqueio,
+  progressao, calcStreak, hojeSP, verificarDesbloqueio, fraseDoDia,
 } from "../lib/store";
 import { supabase } from "../lib/supabase";
 import { pullFromCloud, syncNow } from "../lib/sync";
+import { agendarLembretes, statusPermissao, pedirPermissao, notificarTeste } from "../lib/notificacoes";
+import InstalarApp from "../components/InstalarApp";
 
 function fmtKg(n) {
   return n.toFixed(1).replace(".", ",");
@@ -17,6 +19,7 @@ function fmtKg(n) {
 export default function Home() {
   const router = useRouter();
   const [s, setS] = useState(null);
+  const [notif, setNotif] = useState("granted"); // esconde o card por padrão até saber
 
   useEffect(() => {
     async function init() {
@@ -34,9 +37,17 @@ export default function Home() {
         router.replace("/celebracao"); return;
       }
       setS(st);
+      setNotif(statusPermissao());
+      agendarLembretes(); // lembrete do ritual (se permissão concedida)
     }
     init();
   }, [router]);
+
+  async function ativarNotif() {
+    const r = await pedirPermissao();
+    setNotif(r);
+    if (r === "granted") { agendarLembretes(); notificarTeste(); }
+  }
 
   if (!s) return <div className="app-bg min-h-dvh" />;
 
@@ -72,14 +83,43 @@ export default function Home() {
       </div>
 
       {!preparou && (
-        <Link href="/preparo" className="card block mt-[22px] p-5 border-gold/40">
-          <div className="text-[15.5px] font-extrabold">🧪 Seu primeiro passo</div>
-          <div className="text-[13px] text-sub2 font-semibold mt-1">
-            Prepare suas Gotas do Sono Profundo. Leva só 10 minutinhos.
+        <div className="card mt-[22px] p-5" style={{ borderColor: "rgba(251,211,141,.45)", background: "linear-gradient(160deg, rgba(251,211,141,.08), rgba(255,255,255,.045))" }}>
+          <div className="flex items-center gap-3">
+            <div className="w-[52px] h-[52px] flex-none rounded-[16px] flex items-center justify-center text-[26px] anim-float"
+              style={{ background: "rgba(251,211,141,.14)", border: "1px solid rgba(251,211,141,.45)" }}>🧪</div>
+            <div>
+              <div className="text-[16px] font-black leading-tight">Sua primeira receita te espera!</div>
+              <div className="text-[12.5px] text-sub2 font-semibold mt-0.5">Gotas do Sono Profundo · Fase 1</div>
+            </div>
           </div>
-          <div className="cta-gold text-center py-3.5 mt-4 text-[15px]">Ver minha receita →</div>
-        </Link>
+
+          <div className="mt-4 space-y-2">
+            {[
+              { n: "1", t: "Compre os ingredientes (lista pronta, ~R$ 25 no mercado)" },
+              { n: "2", t: "Prepare com o passo a passo guiado — só 10 minutos" },
+              { n: "3", t: "Aguarde 24h de descanso e comece seu ritual noturno 🌙" },
+            ].map((p) => (
+              <div key={p.n} className="flex items-center gap-2.5">
+                <div className="w-6 h-6 flex-none rounded-full flex items-center justify-center text-[11.5px] font-black text-[#3c2a10]"
+                  style={{ background: "linear-gradient(135deg,#fbd38d,#f6ad55)" }}>{p.n}</div>
+                <div className="text-[12.5px] text-sub2 font-semibold leading-snug">{p.t}</div>
+              </div>
+            ))}
+          </div>
+
+          <Link href="/receita" className="cta-gold block text-center py-4 mt-4 text-[15.5px]">
+            🌿 Iniciar minha primeira receita
+          </Link>
+          <div className="text-[11.5px] text-sub font-semibold text-center mt-2.5">
+            +50 pontos e a conquista Alquimista 🏆 quando concluir
+          </div>
+        </div>
       )}
+
+      {/* Frase do dia */}
+      <div className="card mt-[22px] p-4 text-center" style={{ background: "rgba(165,180,252,.06)" }}>
+        <div className="text-[13px] text-lilac font-bold leading-relaxed">✨ {fraseDoDia()}</div>
+      </div>
 
       {/* SONO */}
       <div className="card mt-[22px] p-[22px_18px]">
@@ -187,6 +227,36 @@ export default function Home() {
         </div>
       )}
 
+      {/* NOTIFICAÇÕES (convite, se ainda não decidiu) */}
+      {preparou && notif === "default" && (
+        <button onClick={ativarNotif} className="card block w-full text-left mt-[22px] p-[16px]">
+          <div className="flex items-center gap-[14px]">
+            <div className="w-[46px] h-[46px] flex-none rounded-[14px] flex items-center justify-center text-[22px]"
+              style={{ background: "rgba(251,211,141,.12)", border: "1px solid rgba(251,211,141,.4)" }}>🔔</div>
+            <div className="flex-1">
+              <div className="text-[14.5px] font-extrabold">Ativar lembrete do ritual</div>
+              <div className="text-[12px] text-sub font-semibold mt-[3px]">Um toque carinhoso na hora certa — proteja seu streak 🔥</div>
+            </div>
+            <div className="text-gold text-[20px]">→</div>
+          </div>
+        </button>
+      )}
+
+      {/* FOTO DE ANTES (se ainda não colocou) */}
+      {!s.fotoAntes && (
+        <Link href="/progresso" className="card block mt-[22px] p-[16px]">
+          <div className="flex items-center gap-[14px]">
+            <div className="w-[46px] h-[46px] flex-none rounded-[14px] flex items-center justify-center text-[22px]"
+              style={{ background: "rgba(165,180,252,.12)", border: "1px solid rgba(165,180,252,.4)" }}>📸</div>
+            <div className="flex-1">
+              <div className="text-[14.5px] font-extrabold">Adicione sua foto de "antes"</div>
+              <div className="text-[12px] text-sub font-semibold mt-[3px]">Seu eu do futuro vai agradecer esse registro 💛</div>
+            </div>
+            <div className="text-gold text-[20px]">→</div>
+          </div>
+        </Link>
+      )}
+
       {/* GAMIFICAÇÃO */}
       <div className="grid grid-cols-3 gap-3 mt-[22px]">
         {[
@@ -200,6 +270,9 @@ export default function Home() {
           </div>
         ))}
       </div>
+
+      {/* Banner de instalação do PWA */}
+      <InstalarApp />
     </PageShell>
   );
 }
