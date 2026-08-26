@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Stars, Logo } from "../../components/ui";
-import { load, registrarRitual, calcStreak, FRASES } from "../../lib/store";
+import { load, registrarRitual, calcStreak, hojeSP, FRASES } from "../../lib/store";
 import { syncNow } from "../../lib/sync";
 import { FASE1 } from "../../lib/receitas";
 import GuiaAudio from "../../components/GuiaAudio";
@@ -31,6 +31,7 @@ export default function Ritual() {
 
   if (!s) return <div className="app-bg min-h-dvh" />;
 
+  const horaFeitoHoje = s.rituais?.[hojeSP()]; // se existe, o ritual de hoje JÁ foi registrado
   const madrugada = s.perfil?.dificuldade === "madrugada";
   const quando = madrugada ? "60 min antes de deitar (seu perfil)" : "30–60 min antes de deitar";
 
@@ -46,11 +47,34 @@ export default function Ritual() {
   }
 
   function confirmar() {
+    if (s.rituais?.[hojeSP()]) return; // proteção extra: só 1x ao dia
     const st = registrarRitual(s);
     setStreak(calcStreak(st));
     setS(st);
     setFeito(true);
     syncNow();
+  }
+
+  // JÁ registrou o ritual hoje → mostra confirmação, sem botão de repetir
+  if (horaFeitoHoje && !feito) {
+    return (
+      <div className="app-bg relative max-w-md mx-auto min-h-dvh">
+        <Stars />
+        <div className="relative z-10 px-6 pt-12 pb-10 flex flex-col min-h-dvh justify-center text-center">
+          <div className="text-[68px]">✅</div>
+          <h1 className="text-[25px] font-black tracking-tight mt-5">Ritual de hoje já feito!</h1>
+          <div className="card px-6 py-4 mt-5">
+            <div className="text-[15px] font-extrabold text-green">🍵 Chá tomado às {horaFeitoHoje}</div>
+            <div className="text-[12.5px] text-sub font-semibold mt-1">O ritual só pode ser registrado 1 vez por dia</div>
+          </div>
+          <p className="text-[14px] text-sub2 font-semibold mt-6 leading-relaxed px-3">
+            Seu corpo agradece. Agora é luz baixa, celular fora da cama e um sono profundo. 🌙
+          </p>
+          <p className="text-[13px] text-sub font-semibold mt-3">Volte amanhã à noite para o próximo chá — sua sequência continua! 🔥</p>
+          <button onClick={() => router.replace("/")} className="cta-gold w-full py-4 mt-8 text-[16px]">Voltar ao painel</button>
+        </div>
+      </div>
+    );
   }
 
   if (feito) {

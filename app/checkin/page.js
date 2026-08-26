@@ -20,12 +20,16 @@ export default function Checkin() {
   const [peso, setPeso] = useState("");
   const [frase] = useState(() => FRASES[Math.floor(Math.random() * FRASES.length)]);
   const [streak, setStreak] = useState(0);
+  const [jaFezHoje, setJaFezHoje] = useState(false);
 
   useEffect(() => {
     const st = load();
     if (!st.perfil) { router.replace("/onboarding"); return; }
     const c = st.checkins[hojeSP()];
-    if (c) { setSono(c.sono); setHoras(c.horas); setAcordou(c.acordou); setPeso(c.peso != null ? String(c.peso).replace(".", ",") : ""); }
+    if (c) {
+      setJaFezHoje(true); // check-in de hoje já existe → modo edição (sem pontos novos)
+      setSono(c.sono); setHoras(c.horas); setAcordou(c.acordou); setPeso(c.peso != null ? String(c.peso).replace(".", ",") : "");
+    }
     setS(st);
   }, [router]);
 
@@ -53,6 +57,11 @@ export default function Checkin() {
               ))}
             </div>
             <button onClick={() => router.push("/")} className="text-left text-[13px] text-sub font-bold mt-3">✕ Fechar</button>
+            {jaFezHoje && (
+              <div className="card p-3 mt-3" style={{ background: "rgba(126,232,178,.07)", borderColor: "rgba(126,232,178,.3)" }}>
+                <span className="text-[12px] text-green font-bold">✅ Você já fez o check-in de hoje — aqui você só corrige as respostas se precisar (os pontos contam 1x ao dia).</span>
+              </div>
+            )}
           </>
         )}
 
