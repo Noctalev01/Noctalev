@@ -8,25 +8,57 @@ import { syncNow } from "../../lib/sync";
 
 const LBL = { 1: "Péssimo", 2: "Ruim", 3: "Regular", 4: "Bom", 5: "Excelente" };
 
-function GraficoPeso({ pesos }) {
+function GraficoPeso({ pesos, meta }) {
   if (pesos.length < 2)
-    return <div className="text-sub text-[13px] font-semibold text-center py-8">Registre seu peso nos check-ins<br />para ver seu gráfico 📉</div>;
-  const w = 320, h = 150, pad = 24;
+    return (
+      <div className="text-sub text-[13px] font-semibold text-center py-8 leading-relaxed">
+        Registre seu peso nos check-ins<br />para ver sua curva de evolução 📉
+      </div>
+    );
+  const w = 330, h = 170, padX = 34, padY = 22;
   const vals = pesos.map((p) => p.peso);
-  const min = Math.min(...vals), max = Math.max(...vals), range = max - min || 1;
-  const pts = vals.map((v, i) => [
-    pad + (i * (w - pad * 2)) / (vals.length - 1),
-    pad + ((max - v) / range) * (h - pad * 2),
-  ]);
+  // inclui a meta na escala (se estiver próxima) para a linha aparecer
+  const metaVisivel = meta != null && meta > Math.min(...vals) - 8;
+  const lo = Math.min(...vals, metaVisivel ? meta : Infinity);
+  const hi = Math.max(...vals);
+  const range = hi - lo || 1;
+  const X = (i) => padX + (i * (w - padX - 10)) / (vals.length - 1);
+  const Y = (v) => padY + ((hi - v) / range) * (h - padY * 2);
+  const pts = vals.map((v, i) => [X(i), Y(v)]);
+  const linha = pts.map((p) => p.join(",")).join(" ");
+  const area = `${padX},${h - padY} ${linha} ${pts[pts.length - 1][0]},${h - padY}`;
+  const fmt = (d) => `${d.slice(8)}/${d.slice(5, 7)}`;
   return (
     <svg width="100%" viewBox={`0 0 ${w} ${h}`}>
-      <text x={pad - 6} y={pad + 4} fill="#8f97c0" fontSize="11" fontWeight="700" textAnchor="end">{max.toFixed(1)}</text>
-      <text x={pad - 6} y={h - pad + 4} fill="#8f97c0" fontSize="11" fontWeight="700" textAnchor="end">{min.toFixed(1)}</text>
-      <polyline points={pts.map((p) => p.join(",")).join(" ")} fill="none" stroke="#7ee8b2" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+      <defs>
+        <linearGradient id="gpFill" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#7ee8b2" stopOpacity="0.28" />
+          <stop offset="100%" stopColor="#7ee8b2" stopOpacity="0.02" />
+        </linearGradient>
+      </defs>
+      {/* linhas-guia */}
+      {[hi, (hi + lo) / 2, lo].map((v, i) => (
+        <g key={i}>
+          <line x1={padX} y1={Y(v)} x2={w - 10} y2={Y(v)} stroke="rgba(255,255,255,.07)" strokeWidth="1" />
+          <text x={padX - 6} y={Y(v) + 4} fill="#8f97c0" fontSize="10.5" fontWeight="700" textAnchor="end">{v.toFixed(1)}</text>
+        </g>
+      ))}
+      {/* linha da meta */}
+      {metaVisivel && meta >= lo && meta <= hi && (
+        <g>
+          <line x1={padX} y1={Y(meta)} x2={w - 10} y2={Y(meta)} stroke="#fbd38d" strokeWidth="1.5" strokeDasharray="5 4" opacity="0.7" />
+          <text x={w - 12} y={Y(meta) - 5} fill="#fbd38d" fontSize="10" fontWeight="800" textAnchor="end">meta 🎯</text>
+        </g>
+      )}
+      <polygon points={area} fill="url(#gpFill)" />
+      <polyline points={linha} fill="none" stroke="#7ee8b2" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
       {pts.map((p, i) => (
-        <circle key={i} cx={p[0]} cy={p[1]} r={i === pts.length - 1 ? 5 : 3.5}
+        <circle key={i} cx={p[0]} cy={p[1]} r={i === pts.length - 1 ? 5.5 : 3.5}
           fill={i === pts.length - 1 ? "#fbd38d" : "#7ee8b2"} stroke="#10142c" strokeWidth={i === pts.length - 1 ? 2 : 0} />
       ))}
+      {/* datas do primeiro e último ponto */}
+      <text x={pts[0][0]} y={h - 4} fill="#8f97c0" fontSize="10" fontWeight="700" textAnchor="start">{fmt(pesos[0].data)}</text>
+      <text x={pts[pts.length - 1][0]} y={h - 4} fill="#fbd38d" fontSize="10" fontWeight="800" textAnchor="end">{fmt(pesos[pesos.length - 1].data)}</text>
     </svg>
   );
 }
@@ -160,7 +192,7 @@ export default function Progresso() {
 
       <div className="card mt-5 p-5">
         <div className="flex justify-between items-center">
-          <div className="eyebrow">Peso</div>
+          <div className="eyebrow">Evolução do peso</div>
           <div className="flex gap-1.5">
             {[7, 14, 30].map((p) => (
               <button key={p} onClick={() => setPeriodo(p)}
@@ -170,7 +202,41 @@ export default function Progresso() {
             ))}
           </div>
         </div>
-        <div className="mt-3"><GraficoPeso pesos={pesos} /></div>
+
+        {/* resumo: quanto já foi */}
+        {todos.length >= 2 && (() => {
+          const primeiro = todos[0].peso;
+          const ultimo = todos[todos.length - 1].peso;
+          const dif = primeiro - ultimo;
+          const meta = s.perfil?.pesoMeta;
+          const faltam = meta != null ? Math.max(0, ultimo - meta) : null;
+          return (
+            <div className="grid grid-cols-3 gap-2 mt-3">
+              <div className="rounded-xl p-2.5 text-center" style={{ background: "rgba(255,255,255,.04)" }}>
+                <div className="text-[16px] font-black tracking-tight">{ultimo.toFixed(1)}</div>
+                <div className="text-[10px] text-sub font-bold mt-0.5">peso atual</div>
+              </div>
+              <div className="rounded-xl p-2.5 text-center" style={{ background: dif >= 0.1 ? "rgba(126,232,178,.08)" : "rgba(255,255,255,.04)" }}>
+                <div className={`text-[16px] font-black tracking-tight ${dif >= 0.1 ? "text-green" : ""}`}>
+                  {dif >= 0.1 ? `−${dif.toFixed(1)}` : dif <= -0.1 ? `+${(-dif).toFixed(1)}` : "0,0"}
+                </div>
+                <div className="text-[10px] text-sub font-bold mt-0.5">{dif >= 0.1 ? "já eliminados 🎉" : "desde o início"}</div>
+              </div>
+              <div className="rounded-xl p-2.5 text-center" style={{ background: "rgba(251,211,141,.06)" }}>
+                <div className="text-[16px] font-black tracking-tight text-gold">{faltam != null ? faltam.toFixed(1) : "—"}</div>
+                <div className="text-[10px] text-sub font-bold mt-0.5">até a meta 🎯</div>
+              </div>
+            </div>
+          );
+        })()}
+
+        <div className="mt-3"><GraficoPeso pesos={pesos} meta={s.perfil?.pesoMeta} /></div>
+
+        <div className="rounded-xl p-3 mt-2" style={{ background: "rgba(165,180,252,.06)" }}>
+          <div className="text-[11.5px] text-lilac font-semibold leading-relaxed">
+            💡 <b>Como pesar do jeito certo:</b> sempre de manhã, em jejum, depois de ir ao banheiro, na mesma balança e com roupa leve. Pesar em horários diferentes engana o gráfico!
+          </div>
+        </div>
       </div>
 
       <div className="card mt-4 p-5">

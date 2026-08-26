@@ -7,6 +7,10 @@ import { supabaseAdmin } from "../../../lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
+// Emails de teste — NÃO contam nas métricas nem aparecem na lista do admin
+const EMAILS_TESTE = ["teste@noctalev.app", "clienteteste@noctalev.com", "john.doe@example.com"];
+const ehTeste = (email) => EMAILS_TESTE.includes(String(email || "").toLowerCase());
+
 function autz(pin) {
   return pin && pin === (process.env.ADMIN_PIN || "2026");
 }
@@ -42,7 +46,7 @@ export async function GET(req) {
       .select("user_id, data, sono_qualidade, horas_sono, acordou_madrugada, peso, profiles(nome, email)")
       .order("data", { ascending: true });
     const linhas = [["nome", "email", "data", "sono_1a5", "horas", "acordou", "peso_kg"]];
-    (cks || []).forEach((c) => linhas.push([
+    (cks || []).filter((c) => !ehTeste(c.profiles?.email)).forEach((c) => linhas.push([
       c.profiles?.nome || "", c.profiles?.email || "", c.data,
       c.sono_qualidade, c.horas_sono, c.acordou_madrugada ? "sim" : "nao", c.peso ?? "",
     ]));
@@ -61,8 +65,15 @@ export async function GET(req) {
     db.from("compradoras").select("*"),
   ]);
 
+  // separa contas de teste (ficam fora de TUDO: lista, métricas e CSV)
+  const idsTeste = new Set((perfis || []).filter((p) => ehTeste(p.email)).map((p) => p.id));
+  const perfisReais = (perfis || []).filter((p) => !ehTeste(p.email));
+  const cksHojeReais = (cksHoje || []).filter((c) => !idsTeste.has(c.user_id));
+  const todosCksReais = (todosCks || []).filter((c) => !idsTeste.has(c.user_id));
+  const compradorasReais = (compradoras || []).filter((c) => !ehTeste(c.email));
+
   const porUser = {};
-  (todosCks || []).forEach((c) => {
+  todosCksReais.forEach((c) => {
     porUser[c.user_id] = porUser[c.user_id] || { n: 0, ultimo: null, ultimoPeso: null };
     porUser[c.user_id].n++;
     if (!porUser[c.user_id].ultimo || c.data > porUser[c.user_id].ultimo) {
@@ -71,7 +82,7 @@ export async function GET(req) {
     }
   });
 
-  const usuarias = (perfis || []).map((p) => {
+  const usuarias = perfisReais.map((p) => {
     const st = porUser[p.id] || { n: 0, ultimo: null, ultimoPeso: null };
     const diaProt = p.receita_preparada_em
       ? Math.max(1, Math.round((new Date(hoje) - new Date(p.receita_preparada_em.slice(0, 10))) / 86400000) + 1)
@@ -94,12 +105,12 @@ export async function GET(req) {
   return NextResponse.json({
     metricas: {
       total: usuarias.length,
-      ativasHoje: new Set((cksHoje || []).map((c) => c.user_id)).size,
-      checkinsHoje: (cksHoje || []).length,
+      ativasHoje: new Set(cksHojeReais.map((c) => c.user_id)).size,
+      checkinsHoje: cksHojeReais.length,
       pctPreparou: usuarias.length ? Math.round((usuarias.filter((u) => u.preparou).length / usuarias.length) * 100) : 0,
       pctDia7: usuarias.length ? Math.round((usuarias.filter((u) => u.dia >= 7).length / usuarias.length) * 100) : 0,
       fase2Liberadas: usuarias.filter((u) => u.fase2Liberada).length,
-      compradoras: (compradoras || []).length,
+      compradoras: compradorasReais.length,
     },
     usuarias,
   });

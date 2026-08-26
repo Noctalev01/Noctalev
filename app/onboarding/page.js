@@ -193,6 +193,11 @@ export default function Onboarding() {
               <>
                 <h2 className="text-[24px] font-black tracking-tight">Qual seu peso atual?</h2>
                 <p className="text-sub text-[13.5px] font-semibold mt-2">Será o ponto de partida do seu gráfico 📉</p>
+                <div className="card p-3.5 mt-4" style={{ background: "rgba(251,211,141,.07)", borderColor: "rgba(251,211,141,.22)" }}>
+                  <div className="text-[12.5px] font-bold leading-relaxed" style={{ color: "#fbd38d" }}>
+                    ⚖️ Dica de ouro: faça esta primeira pesagem <u>hoje à noite, depois do jantar</u> (com roupa leve). As próximas serão sempre de manhã, em jejum — assim seu gráfico mostra sua evolução real desde o dia 1.
+                  </div>
+                </div>
                 <div className="flex items-center gap-3 mt-6">
                   <input inputMode="decimal" placeholder="Ex: 78,5" value={f.pesoInicial} onChange={(e) => set("pesoInicial", e.target.value)}
                     className="flex-1 px-4 py-4 text-[22px] font-black text-center" />
