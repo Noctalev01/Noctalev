@@ -54,13 +54,13 @@ export default function Receita() {
         <div className="card mt-5 p-4 flex items-center gap-3" style={{ borderColor: "rgba(126,232,178,.35)" }}>
           <span className="text-[22px]">🧪</span>
           <div>
-            <div className="text-[14.5px] font-extrabold text-green">Gotas preparadas</div>
+            <div className="text-[14.5px] font-extrabold text-green">Mistura pronta — rende ~14 noites</div>
             <div className="text-[12.5px] text-sub font-semibold">Conquista Alquimista desbloqueada</div>
           </div>
         </div>
       ) : (
         <Link href="/preparo" className="cta-gold block text-center py-4 mt-5 text-[15.5px]">
-          Iniciar preparo guiado
+          Montar minha mistura (5 min, sem fogão)
         </Link>
       )}
 
@@ -82,12 +82,36 @@ export default function Receita() {
         </div>
       </div>
 
-      {/* como usar */}
-      <div className="card mt-5 p-5">
-        <div className="eyebrow">Como usar</div>
-        <p className="text-[14px] font-bold text-gold mt-2 leading-relaxed">{FASE1.uso}</p>
-        <p className="text-[13px] text-sub2 font-semibold mt-3 leading-relaxed">{FASE1.ritual}</p>
-        <p className="text-[13px] text-sub2 font-semibold mt-3 leading-relaxed">{FASE1.sabor}</p>
+      {/* ritual noturno — card fixo */}
+      <div className="card mt-5 p-5" style={{ borderColor: "rgba(251,211,141,.3)" }}>
+        <div className="eyebrow" style={{ color: "#fbd38d" }}>Seu ritual de toda noite (~3 min)</div>
+        <div className="mt-3 space-y-3">
+          {[
+            { e: "🥄", t: <><b className="text-txt">1 colher de sopa</b> da mistura na xícara</> },
+            { e: "☕", t: <>Água quente por cima (<b className="text-txt">quente, não fervendo</b>) e abafe 5–10 min com um pires — o app tem um timer!</> },
+            { e: "🍯", t: <>Coe, adoce com <b className="text-txt">1 colher de chá de mel</b> e tome morno, 30–60 min antes de deitar</> },
+            { e: "🕯️", t: <>Depois do chá: <b className="text-txt">luz baixa + celular fora da cama</b></> },
+          ].map((p, i) => (
+            <div key={i} className="flex gap-3 items-start">
+              <span className="text-[18px] flex-none">{p.e}</span>
+              <span className="text-[13.5px] text-sub2 font-semibold leading-relaxed">{p.t}</span>
+            </div>
+          ))}
+        </div>
+        {preparou && (
+          <Link href="/ritual" className="cta-gold block text-center py-3.5 mt-4 text-[14.5px]">
+            Fazer meu ritual de hoje 🍵
+          </Link>
+        )}
+      </div>
+
+      {/* por que funciona */}
+      <div className="card mt-4 p-4" style={{ background: "rgba(165,180,252,.05)" }}>
+        <p className="text-[12.5px] text-lilac font-semibold leading-relaxed">💡 {FASE1.educativo}</p>
+      </div>
+
+      <div className="card mt-4 p-4">
+        <p className="text-[13px] text-sub2 font-semibold leading-relaxed">{FASE1.sabor}</p>
       </div>
 
       {/* fases bloqueadas */}

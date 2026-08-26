@@ -63,6 +63,11 @@ export default function Admin() {
       checkoutFase2: c.checkout?.fase2 || "",
       checkoutFase3: c.checkout?.fase3 || "",
       whatsapp: c.suporte?.whatsapp || "",
+      impulsos: Array.isArray(c.impulsos?.def) && c.impulsos.def.length ? c.impulsos.def : [
+        { id: "kiwi", emoji: "🥝", nome: "Kiwi da Noite", acao: "Comer 2 kiwis", base: "deitar", offsetMin: -60, notif: "🥝 Hora do seu Kiwi da Noite! 2 kiwis agora = sono mais profundo e metabolismo queimando enquanto você dorme.", copy: "" },
+        { id: "banana", emoji: "🍌", nome: "Banana no Jantar", acao: "1 banana na última refeição", base: "jantar", offsetMin: 0, notif: "🍌 Lembrete do jantar: inclua 1 banana. Magnésio + triptofano relaxam o corpo e cortam a vontade de doce depois do jantar.", copy: "" },
+        { id: "banho", emoji: "🛁", nome: "Banho Morno", acao: "10 min relaxante", base: "deitar", offsetMin: -90, notif: "🛁 Seu banho morno de hoje: 10 minutinhos agora preparam seu corpo para a noite mais funda — e é no sono fundo que a gordura queima.", copy: "" },
+      ],
     });
   }
 
@@ -72,6 +77,7 @@ export default function Admin() {
         progressao: { diasInternos: Number(cfg.diasInternos) || 7, minCheckins: Number(cfg.minCheckins) || 4, maxDias: Number(cfg.maxDias) || 14 },
         checkout: { fase2: cfg.checkoutFase2.trim(), fase3: cfg.checkoutFase3.trim() },
         suporte: { whatsapp: cfg.whatsapp.trim() },
+        impulsos: { def: cfg.impulsos },
       },
     });
   }
@@ -287,6 +293,35 @@ export default function Admin() {
                 <label className="text-[11.5px] font-bold text-sub">Link do WhatsApp</label>
                 <input value={cfg.whatsapp} onChange={(e) => setCfg({ ...cfg, whatsapp: e.target.value })}
                   placeholder="https://wa.me/55..." className="w-full px-3 py-2.5 mt-1 text-[13px] font-semibold" />
+              </Section>
+
+              <Section title="⚡ Impulsos Naturais (aceleradores)">
+                <p className="text-sub text-[12px] font-semibold mb-3 leading-relaxed">
+                  Textos e horários padrão dos impulsos. Horário = base (jantar/deitar) + deslocamento em minutos (negativo = antes).
+                </p>
+                {(cfg.impulsos || []).map((imp, ix) => (
+                  <div key={imp.id} className="rounded-xl p-3 mb-3" style={{ background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.08)" }}>
+                    <div className="text-[13px] font-extrabold">{imp.emoji} {imp.nome} <span className="text-sub font-semibold">({imp.id})</span></div>
+                    <div className="grid grid-cols-2 gap-2 mt-2">
+                      <div>
+                        <label className="text-[10.5px] font-bold text-sub">Base do horário</label>
+                        <select value={imp.base} onChange={(e) => { const n = [...cfg.impulsos]; n[ix] = { ...imp, base: e.target.value }; setCfg({ ...cfg, impulsos: n }); }}
+                          className="w-full px-2 py-2 mt-1 text-[12.5px] font-bold">
+                          <option value="deitar">hora de deitar</option>
+                          <option value="jantar">hora do jantar</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-[10.5px] font-bold text-sub">Deslocamento (min)</label>
+                        <input inputMode="numeric" value={imp.offsetMin} onChange={(e) => { const n = [...cfg.impulsos]; n[ix] = { ...imp, offsetMin: Number(e.target.value) || 0 }; setCfg({ ...cfg, impulsos: n }); }}
+                          className="w-full px-2 py-2 mt-1 text-[12.5px] font-bold text-center" />
+                      </div>
+                    </div>
+                    <label className="text-[10.5px] font-bold text-sub block mt-2">Texto da notificação</label>
+                    <textarea value={imp.notif} rows={2} onChange={(e) => { const n = [...cfg.impulsos]; n[ix] = { ...imp, notif: e.target.value }; setCfg({ ...cfg, impulsos: n }); }}
+                      className="w-full px-2 py-2 mt-1 text-[12px] font-semibold leading-relaxed" />
+                  </div>
+                ))}
               </Section>
 
               <button onClick={salvarConfig} className="cta-gold w-full py-3.5 mt-4 text-[15px]">

@@ -9,7 +9,7 @@ import { comprimirFoto } from "../../lib/foto";
 
 const SLIDES = [
   { emoji: "🌙", titulo: "Seu protocolo começa hoje", texto: "O NoctaLev usa o poder do seu sono para destravar o emagrecimento. Simples, natural e no seu ritmo." },
-  { emoji: "🧪", titulo: "Prepare suas gotas uma única vez", texto: "Uma receita caseira de 10 minutos, com ingredientes de mercado. O app te guia passo a passo." },
+  { emoji: "🍵", titulo: "Monte sua mistura uma única vez", texto: "Um chá ritual de 5 minutos, sem fogão, com ingredientes de mercado. O app te guia passo a passo." },
   { emoji: "📈", titulo: "Registre seu sono e peso todo dia", texto: "Em poucos toques por dia, você acompanha sua evolução e desbloqueia as próximas fases." },
 ];
 
@@ -41,7 +41,7 @@ export default function Onboarding() {
   const [userId, setUserId] = useState(null);
   const [foto, setFoto] = useState(null); // dataURL da foto "antes"
   const [fotoErro, setFotoErro] = useState("");
-  const [f, setF] = useState({ nome: "", pesoInicial: "", pesoMeta: "", dificuldade: null, refluxo: null, cafeina: null });
+  const [f, setF] = useState({ nome: "", pesoInicial: "", pesoMeta: "", dificuldade: null, refluxo: null, cafeina: null, horaJantar: "19:30", horaDeitar: "22:30" });
 
   const set = (k, v) => setF((p) => ({ ...p, [k]: v }));
 
@@ -131,6 +131,8 @@ export default function Onboarding() {
       dificuldade: f.dificuldade,
       refluxo: f.refluxo === true,
       cafeina: f.cafeina === true,
+      horaJantar: f.horaJantar || "19:30",
+      horaDeitar: f.horaDeitar || "22:30",
     });
     if (foto) salvarFotoAntes(load(), foto);
     if (userId) await pushProfile(userId); // salva na nuvem
@@ -303,7 +305,7 @@ export default function Onboarding() {
         {etapa === "quiz" && (
           <div className="flex-1 flex flex-col justify-center">
             <div className="flex gap-1.5 mb-8">
-              {[0, 1, 2, 3, 4].map((i) => (
+              {[0, 1, 2, 3, 4, 5].map((i) => (
                 <div key={i} className={`flex-1 h-1.5 rounded-full ${i <= q ? "bg-gold" : "bg-white/15"}`} />
               ))}
             </div>
@@ -392,7 +394,26 @@ export default function Onboarding() {
                     ))}
                   </div>
                 </div>
-                <button disabled={f.refluxo === null || f.cafeina === null} onClick={() => setEtapa("foto")}
+                <button disabled={f.refluxo === null || f.cafeina === null} onClick={() => setQ(5)}
+                  className="cta-gold w-full py-4 mt-8 text-[16px] disabled:opacity-40">Continuar</button>
+              </>
+            )}
+
+            {q === 5 && (
+              <>
+                <h2 className="text-[24px] font-black tracking-tight">Sua rotina da noite 🌙</h2>
+                <p className="text-sub text-[13.5px] font-semibold mt-2">Vamos programar seus lembretes nos horários certos para você</p>
+                <div className="mt-6">
+                  <div className="text-[15px] font-bold">A que horas você costuma jantar?</div>
+                  <input type="time" value={f.horaJantar} onChange={(e) => set("horaJantar", e.target.value)}
+                    className="w-full px-4 py-4 mt-3 text-[20px] font-black text-center" />
+                </div>
+                <div className="mt-5">
+                  <div className="text-[15px] font-bold">A que horas você costuma deitar?</div>
+                  <input type="time" value={f.horaDeitar} onChange={(e) => set("horaDeitar", e.target.value)}
+                    className="w-full px-4 py-4 mt-3 text-[20px] font-black text-center" />
+                </div>
+                <button disabled={!f.horaJantar || !f.horaDeitar} onClick={() => setEtapa("foto")}
                   className="cta-gold w-full py-4 mt-8 text-[16px] disabled:opacity-40">Continuar</button>
               </>
             )}
@@ -452,9 +473,9 @@ export default function Onboarding() {
             <h1 className="text-[26px] font-black tracking-tight mt-6">
               {f.nome}, seu primeiro passo:
             </h1>
-            <p className="text-[18px] font-extrabold text-gold mt-2">preparar suas gotas.</p>
+            <p className="text-[18px] font-extrabold text-gold mt-2">montar sua Mistura do Sono.</p>
             <p className="text-sub2 text-[15px] font-semibold mt-4 leading-relaxed px-2">
-              Leva só 10 minutos, com ingredientes simples de mercado. O app te acompanha em cada passo.
+              Leva só 5 minutos, sem fogão, com ingredientes simples de mercado. O app te acompanha em cada passo.
             </p>
             <div className="card p-4 mt-6 text-[12.5px] text-sub font-semibold leading-relaxed text-left">
               ⚠️ Este protocolo não substitui acompanhamento médico. Não indicado para grávidas, lactantes e crianças.

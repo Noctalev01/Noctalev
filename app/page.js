@@ -6,6 +6,7 @@ import { PageShell, Logo, Ring, Sparkline } from "../components/ui";
 import {
   load, saudacao, diaProtocolo, scoreSono, pesoPerdido, pesosOrdenados,
   progressao, calcStreak, hojeSP, verificarDesbloqueio, fraseDoDia,
+  estadoImpulsos, concluirImpulso,
 } from "../lib/store";
 import { supabase } from "../lib/supabase";
 import { pullFromCloud, syncNow } from "../lib/sync";
@@ -20,6 +21,7 @@ export default function Home() {
   const router = useRouter();
   const [s, setS] = useState(null);
   const [notif, setNotif] = useState("granted"); // esconde o card por padrão até saber
+  const [impAberto, setImpAberto] = useState(null); // id do impulso com explicação aberta
 
   useEffect(() => {
     async function init() {
@@ -78,21 +80,21 @@ export default function Home() {
           {saudacao()}, {nome}
         </h1>
         <div className="text-[13.5px] text-sub font-semibold mt-1">
-          {preparou ? `Dia ${dia} do protocolo · Fase 1` : "Comece preparando suas gotas"}
+          {preparou ? `Dia ${dia} do protocolo · Fase 1` : "Comece montando sua mistura"}
         </div>
       </div>
 
       {!preparou && (
         <div className="card mt-6 p-5" style={{ borderColor: "rgba(251,211,141,.35)", background: "linear-gradient(160deg, rgba(251,211,141,.07), rgba(255,255,255,.04))" }}>
           <div className="eyebrow">Primeiro passo</div>
-          <div className="text-[17px] font-extrabold leading-tight mt-1.5">Gotas do Sono Profundo</div>
-          <div className="text-[12.5px] text-sub2 font-semibold mt-0.5">Sua receita da Fase 1</div>
+          <div className="text-[17px] font-extrabold leading-tight mt-1.5">Mistura do Sono Profundo</div>
+          <div className="text-[12.5px] text-sub2 font-semibold mt-0.5">Seu chá ritual da Fase 1</div>
 
           <div className="mt-4 space-y-2.5">
             {[
-              { n: "1", t: "Compre os ingredientes — lista pronta, cerca de R$ 25" },
-              { n: "2", t: "Prepare com o passo a passo guiado, em 10 minutos" },
-              { n: "3", t: "Aguarde 24h de descanso e comece o ritual noturno" },
+              { n: "1", t: "Compre os ingredientes — lista pronta, ~R$ 12 a 20" },
+              { n: "2", t: "Monte a mistura com o passo a passo, em 5 min (sem fogão)" },
+              { n: "3", t: "Hoje mesmo à noite: seu primeiro chá + ritual do sono" },
             ].map((p) => (
               <div key={p.n} className="flex items-center gap-2.5">
                 <div className="w-6 h-6 flex-none rounded-full flex items-center justify-center text-[11.5px] font-black text-[#3c2a10]"
@@ -173,7 +175,7 @@ export default function Home() {
                 style={{ background: "rgba(126,232,178,.12)", border: "1px solid rgba(126,232,178,.35)" }}>✓</div>
               <div>
                 <div className="text-[15px] font-extrabold">Ritual de hoje <em className="not-italic text-green">concluído</em></div>
-                <div className="text-[12.5px] text-sub font-semibold mt-[3px]">Gotas tomadas às {ritualHoje}</div>
+                <div className="text-[12.5px] text-sub font-semibold mt-[3px]">Chá tomado às {ritualHoje}</div>
               </div>
             </div>
           </div>
@@ -181,10 +183,10 @@ export default function Home() {
           <Link href="/ritual" className="card block mt-4 p-[18px]">
             <div className="flex items-center gap-[14px]">
               <div className="w-[42px] h-[42px] flex-none rounded-[13px] flex items-center justify-center text-[19px]"
-                style={{ background: "rgba(251,211,141,.10)", border: "1px solid rgba(251,211,141,.35)" }}>🌙</div>
+                style={{ background: "rgba(251,211,141,.10)", border: "1px solid rgba(251,211,141,.35)" }}>🍵</div>
               <div className="flex-1">
                 <div className="text-[15px] font-extrabold">Ritual noturno de hoje</div>
-                <div className="text-[12.5px] text-sub font-semibold mt-[3px]">15 gotas + luz baixa, 30 min antes de dormir</div>
+                <div className="text-[12.5px] text-sub font-semibold mt-[3px]">Seu chá + luz baixa, 30–60 min antes de dormir</div>
               </div>
             </div>
             <div className="cta-gold text-center py-3 mt-3.5 text-[14.5px]">Fiz meu ritual de hoje</div>
@@ -206,6 +208,54 @@ export default function Home() {
           </div>
         </Link>
       )}
+
+      {/* ACELERADORES DE HOJE (Impulsos Naturais) */}
+      {preparou && (() => {
+        const imps = estadoImpulsos(s).filter((i) => i.ativo);
+        if (!imps.length) return null;
+        return (
+          <div className="card mt-4 p-[18px]">
+            <div className="flex justify-between items-center">
+              <div className="eyebrow">Aceleradores de hoje</div>
+              <div className="text-[10.5px] text-sub font-bold">+5 pts cada · opcionais</div>
+            </div>
+            <div className="mt-3 space-y-2.5">
+              {imps.map((imp) => (
+                <div key={imp.id}>
+                  <div className="flex items-center gap-3 w-full">
+                    <button
+                      onClick={() => { if (!imp.feitoHoje) { const st = concluirImpulso(load(), imp.id); setS({ ...st }); syncNow(); } }}
+                      className="flex items-center gap-3 flex-1 text-left">
+                      <span className={`w-7 h-7 flex-none rounded-lg border flex items-center justify-center text-[14px] ${
+                        imp.feitoHoje ? "bg-green/20 border-green text-green" : "border-white/25 text-transparent"
+                      }`}>✓</span>
+                      <span className="text-[18px] flex-none">{imp.emoji}</span>
+                      <span className="flex-1">
+                        <span className={`block text-[13.5px] font-extrabold leading-tight ${imp.feitoHoje ? "text-sub line-through" : "text-txt"}`}>
+                          {imp.nome}
+                        </span>
+                        <span className="block text-[11.5px] text-sub font-semibold mt-0.5">{imp.acao} · {imp.hora}</span>
+                      </span>
+                    </button>
+                    <button onClick={() => setImpAberto(impAberto === imp.id ? null : imp.id)}
+                      className="w-7 h-7 flex-none rounded-full flex items-center justify-center text-[12px] font-black text-lilac"
+                      style={{ background: "rgba(165,180,252,.12)", border: "1px solid rgba(165,180,252,.3)" }}>?</button>
+                  </div>
+                  {impAberto === imp.id && imp.copy && (
+                    <div className="rounded-xl p-3 mt-2 ml-10 text-[12px] text-lilac font-semibold leading-relaxed anim-pop"
+                      style={{ background: "rgba(165,180,252,.07)" }}>
+                      {imp.copy}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+            <div className="text-[11px] text-sub font-semibold mt-3 leading-relaxed">
+              💡 Sono profundo é o motor da queima de gordura — os aceleradores turbinam esse motor. Toque para marcar ✓
+            </div>
+          </div>
+        );
+      })()}
 
       {/* FASE 2 */}
       {preparou && (

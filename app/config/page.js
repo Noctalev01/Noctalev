@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { PageShell, Logo } from "../../components/ui";
-import { load, save, resetAll } from "../../lib/store";
+import { load, save, resetAll, estadoImpulsos, setImpulso } from "../../lib/store";
 import { signOut } from "../../lib/supabase";
 import { syncNow } from "../../lib/sync";
 import { statusPermissao, pedirPermissao, agendarLembretes, notificarTeste, suportaNotificacao } from "../../lib/notificacoes";
@@ -84,6 +84,35 @@ export default function Config() {
         <button onClick={salvar} className="cta-gold w-full py-3.5 text-[15px]">
           {salvo ? "Salvo! ✅" : "Salvar alterações"}
         </button>
+      </div>
+
+      {/* ACELERADORES (Impulsos Naturais) */}
+      <div className="card mt-4 p-5">
+        <div className="text-[15px] font-extrabold">⚡ Aceleradores diários</div>
+        <div className="text-[12px] text-sub font-semibold mt-1 leading-relaxed">
+          Micro-ações opcionais que turbinam seu sono e a queima de gordura. Ative, desative ou mude o horário do lembrete:
+        </div>
+        <div className="mt-4 space-y-4">
+          {estadoImpulsos(s).map((imp) => (
+            <div key={imp.id} className="flex items-center gap-3">
+              <span className="text-[22px] flex-none">{imp.emoji}</span>
+              <div className="flex-1 min-w-0">
+                <div className="text-[13.5px] font-extrabold leading-tight">{imp.nome}</div>
+                <div className="text-[11px] text-sub font-semibold mt-0.5">{imp.acao}</div>
+              </div>
+              <input type="time" value={imp.hora}
+                onChange={(e) => { const st = setImpulso(load(), imp.id, { hora: e.target.value }); setS({ ...st }); syncNow(); agendarLembretes(); }}
+                disabled={!imp.ativo}
+                className="w-[88px] px-2 py-2 text-[13px] font-bold text-center disabled:opacity-40" />
+              <button onClick={() => { const st = setImpulso(load(), imp.id, { ativo: !imp.ativo }); setS({ ...st }); syncNow(); agendarLembretes(); }}
+                className="w-[46px] h-[26px] rounded-full relative transition-colors flex-none"
+                style={{ background: imp.ativo ? "#7ee8b2" : "rgba(255,255,255,.15)" }}>
+                <span className="absolute top-[3px] w-[20px] h-[20px] rounded-full bg-white transition-all"
+                  style={{ left: imp.ativo ? "23px" : "3px" }} />
+              </button>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* NOTIFICAÇÕES */}
