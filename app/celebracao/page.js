@@ -43,12 +43,12 @@ export default function Celebracao() {
         </p>
         <p className="text-sub2 text-[15px] font-semibold mt-5 leading-relaxed px-2">
           Seu organismo completou a adaptação da Fase 1. Agora é hora das
-          <b className="text-txt"> Gotas Termo-Metabólicas</b> — que atacam o apetite diurno
+          <b className="text-txt"> Shot Termo-Metabólico</b> — que ataca o apetite diurno
           e os picos de glicemia. ☀️
         </p>
 
         <div className="card p-5 mt-7">
-          <div className="text-[15px] font-extrabold">☀️ Fase 2 — Gotas Termo-Metabólicas</div>
+          <div className="text-[15px] font-extrabold">☀️ Fase 2 — Shot Termo-Metabólico</div>
           <ul className="text-left text-[13.5px] text-sub2 font-semibold mt-3 space-y-2">
             <li>✓ Controla a fome descontrolada da tarde</li>
             <li>✓ Estabiliza os picos de glicemia</li>
