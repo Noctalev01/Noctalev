@@ -110,11 +110,17 @@ export default function Jornada() {
         <button onClick={() => router.push("/")} className="text-[13px] text-sub font-bold">← Voltar</button>
       </div>
 
-      <div className="mt-6">
-        <div className="eyebrow">Sua jornada</div>
-        <h1 className="text-[25px] font-extrabold tracking-tight mt-1">O que esperar em cada fase</h1>
-        <p className="text-[13.5px] text-sub2 font-semibold mt-2 leading-relaxed">
-          Cada corpo tem seu ritmo — mas o caminho é sempre este. Saber o que vem tira a ansiedade e evita desistência. 💛
+      <div className="card mt-6 overflow-hidden" style={{ padding: 0 }}>
+        <div className="relative h-[130px]">
+          <img src="/img/lua-jornada.jpg" alt="" className="w-full h-full object-cover" />
+          <div className="absolute inset-0" style={{ background: "linear-gradient(180deg, rgba(16,20,44,.1), rgba(16,20,44,.9))" }} />
+          <div className="absolute bottom-3.5 left-4 right-4">
+            <div className="eyebrow">Sua jornada</div>
+            <h1 className="text-[22px] font-extrabold tracking-tight mt-0.5">O que esperar em cada fase</h1>
+          </div>
+        </div>
+        <p className="text-[13px] text-sub2 font-semibold leading-relaxed p-[14px_16px]">
+          Cada corpo tem seu ritmo — mas o caminho é sempre este. Saber o que vem tira a ansiedade e evita desistência.
         </p>
       </div>
 

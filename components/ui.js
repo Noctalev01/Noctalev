@@ -111,7 +111,7 @@ export function Sparkline({ pesos, width = 150, height = 84 }) {
   if (!pesos || pesos.length < 2) {
     return (
       <div className="flex-none text-center text-sub text-[12px] font-semibold w-[150px]">
-        Registre seu peso<br />para ver o gráfico 📉
+        Registre seu peso<br />para ver o gráfico
       </div>
     );
   }

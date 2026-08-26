@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { PageShell, Logo } from "../../components/ui";
 import { load, save, progressao, ajustesReceita } from "../../lib/store";
 import { FASE1, FASE2_TEASER, FASE3_TEASER } from "../../lib/receitas";
+import { Icone } from "../../components/icones";
 
 export default function Receita() {
   const router = useRouter();
@@ -56,9 +57,15 @@ export default function Receita() {
   return (
     <PageShell>
       <Logo size="text-[19px]" />
-      <div className="mt-6">
-        <div className="eyebrow">Fase 1</div>
-        <h1 className="text-[25px] font-extrabold tracking-tight mt-1">{FASE1.nome}</h1>
+      <div className="card mt-6 overflow-hidden" style={{ padding: 0 }}>
+        <div className="relative h-[150px]">
+          <img src="/img/cha-noturno.jpg" alt="Mistura do Sono Profundo" className="w-full h-full object-cover" />
+          <div className="absolute inset-0" style={{ background: "linear-gradient(180deg, rgba(16,20,44,.05), rgba(16,20,44,.9))" }} />
+          <div className="absolute bottom-3.5 left-4 right-4">
+            <div className="eyebrow">Fase 1</div>
+            <h1 className="text-[22px] font-extrabold tracking-tight mt-0.5">{FASE1.nome}</h1>
+          </div>
+        </div>
       </div>
 
       {ajustes.length > 0 && (
@@ -161,7 +168,7 @@ export default function Receita() {
         </div>
         {preparou && (
           <Link href="/ritual" className="cta-gold block text-center py-3.5 mt-4 text-[14.5px]">
-            Fazer meu ritual de hoje 🍵
+            Fazer meu ritual de hoje
           </Link>
         )}
       </div>
@@ -176,26 +183,32 @@ export default function Receita() {
       </div>
 
       {/* fases bloqueadas */}
-      <div className="card mt-5 p-5 opacity-95">
-        <div className="flex justify-between items-center">
-          <div className="text-[15px] font-extrabold">Fase 2 — {FASE2_TEASER.nome}</div>
-          <span className="text-[14px] opacity-70">🔒</span>
+      <div className="card mt-5 overflow-hidden opacity-95" style={{ padding: 0 }}>
+        <div className="relative h-[110px]">
+          <img src="/img/fase2-shot.jpg" alt="" className="w-full h-full object-cover" style={{ filter: "saturate(.7) brightness(.75)" }} />
+          <div className="absolute inset-0" style={{ background: "linear-gradient(180deg, rgba(16,20,44,.2), rgba(16,20,44,.92))" }} />
+          <div className="absolute bottom-3 left-4 right-4 flex items-end justify-between">
+            <div className="text-[15px] font-extrabold">Fase 2 — {FASE2_TEASER.nome}</div>
+            <Icone nome="cadeado" cor="#fbd38d" size={16} />
+          </div>
         </div>
-        <p className="text-[13px] text-sub2 font-semibold mt-2 leading-relaxed">{FASE2_TEASER.teaser}</p>
-        {preparou && (
-          <>
-            <div className="bar-track mt-3"><div className="bar-fill" style={{ width: `${prog.pct}%` }} /></div>
-            <div className="mt-2 text-[12.5px] font-bold text-gold">
-              Estamos analisando a resposta do seu corpo à Fase 1 · {prog.pct}%
-            </div>
-          </>
-        )}
+        <div className="p-[14px_18px_18px]">
+          <p className="text-[13px] text-sub2 font-semibold leading-relaxed">{FASE2_TEASER.teaser}</p>
+          {preparou && (
+            <>
+              <div className="bar-track mt-3"><div className="bar-fill" style={{ width: `${prog.pct}%` }} /></div>
+              <div className="mt-2 text-[12.5px] font-bold text-gold">
+                Analisando a resposta do seu corpo à Fase 1 · {prog.pct}%
+              </div>
+            </>
+          )}
+        </div>
       </div>
 
       <div className="card mt-4 p-5 opacity-75">
         <div className="flex justify-between items-center">
           <div className="text-[15px] font-extrabold">Fase 3 — {FASE3_TEASER.nome}</div>
-          <span className="text-[14px] opacity-70">🔒</span>
+          <Icone nome="cadeado" cor="#8f97c0" size={16} />
         </div>
         <p className="text-[13px] text-sub2 font-semibold mt-2 leading-relaxed">{FASE3_TEASER.teaser}</p>
       </div>

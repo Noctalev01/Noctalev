@@ -12,6 +12,7 @@ import { useRouter } from "next/navigation";
 import { PageShell, Logo } from "../../components/ui";
 import { load } from "../../lib/store";
 import { rankingDoDia, novidadesDoDia, nomeTurma, historicoMembro } from "../../lib/turma";
+import { Icone } from "../../components/icones";
 
 function Avatar({ l, size = 44 }) {
   const [erro, setErro] = useState(false);
@@ -90,7 +91,7 @@ export default function Turma() {
       <Logo size="text-[19px]" />
       <div className="mt-6">
         <div className="eyebrow">{nomeTurma(s)}</div>
-        <h1 className="text-[25px] font-extrabold tracking-tight mt-1">Sua turma 👥</h1>
+        <h1 className="text-[25px] font-extrabold tracking-tight mt-1">Sua turma</h1>
         <p className="text-[13px] text-sub2 font-semibold mt-1.5 leading-relaxed">
           {total} pessoas na sua turma · Dia {dia} · {ativos} já iniciaram o protocolo
           {semLogin > 0 ? ` · ${semLogin} ainda não entraram` : ""}
@@ -104,10 +105,10 @@ export default function Turma() {
         <div className="flex-1">
           <div className="text-[15px] font-extrabold">Você está em {posicao}º lugar</div>
           <div className="text-[12px] text-sub2 font-semibold mt-0.5">
-            {posicao === 1 ? "Liderando a turma — incrível! Continue assim 💛"
+            {posicao === 1 ? "Liderando a turma — incrível! Continue assim."
               : posicao <= 3 ? "No pódio! O ritual de hoje mantém você aí em cima."
               : posicao <= 12 ? "Na metade de cima! Chá + check-in todo dia = subir posições."
-              : "Toda campeã começa de onde está. Faça o ritual de hoje e suba no rank! 💪"}
+              : "Toda campeã começa de onde está. Faça o ritual de hoje e suba no rank."}
           </div>
         </div>
       </div>
@@ -183,7 +184,7 @@ export default function Turma() {
                       </div>
                     ) : <div className="text-[12px] font-bold text-sub">mantendo</div>
                   ) : (
-                    <div className="text-[15px]">🍵</div>
+                    <div className="opacity-70"><Icone nome="cha" cor="#8f97c0" size={17} /></div>
                   )}
                 </div>
               </div>
@@ -198,7 +199,7 @@ export default function Turma() {
         <div className="text-[13px] font-extrabold text-green">Como subir no ranking?</div>
         <p className="text-[12.5px] text-sub2 font-semibold mt-1.5 leading-relaxed">
           O rank soma sua <b className="text-txt">perda de peso</b> e a <b className="text-txt">qualidade do seu sono</b>.
-          Chá toda noite + check-in toda manhã = subir posições. Simples assim. 💛
+          Chá toda noite + check-in toda manhã = subir posições. Simples assim.
         </p>
         <Link href="/" className="cta-gold block text-center py-3 mt-3 text-[14px]">
           Fazer minhas ações de hoje
