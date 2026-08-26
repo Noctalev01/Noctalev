@@ -134,7 +134,7 @@ export default function Home() {
               <div className="flex-1">
                 <div className="text-[14.5px] font-extrabold">Sua turma · você está em {rk.posicao}º</div>
                 <div className="text-[12px] text-sub font-semibold mt-[2px]">
-                  {rk.posicao === 1 ? "Liderando! Veja como a turma está 🔥" : `Entre ${rk.total} mulheres — veja o ranking do dia ${rk.dia}`}
+                  {rk.posicao === 1 ? "Liderando! Veja como a turma está 🔥" : `Entre ${rk.total} pessoas — veja o ranking do dia ${rk.dia}`}
                 </div>
               </div>
               <span className="text-sub text-[16px]">›</span>
