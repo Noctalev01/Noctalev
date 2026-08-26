@@ -116,8 +116,9 @@ export default function Config() {
         )}
       </div>
 
-      <a href={s.config?.suporte || "#"} target="_blank" rel="noreferrer" className="card block mt-4 p-4 text-center text-[14.5px] font-extrabold text-lilac">
-        💬 Falar com o suporte
+      <a href={(s.config?.suporte && !s.config.suporte.includes("5500000000000") ? s.config.suporte : "https://wa.me/5554920011946") + "?text=" + encodeURIComponent("Olá! Sou usuária do NoctaLev e preciso de ajuda. 💛")}
+        target="_blank" rel="noreferrer" className="card block mt-4 p-4 text-center text-[14.5px] font-extrabold text-green">
+        💬 Falar com o suporte no WhatsApp
       </a>
 
       <div className="card mt-4 p-4 text-[12px] text-sub font-semibold leading-relaxed">
