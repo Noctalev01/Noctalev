@@ -5,6 +5,7 @@ import { Stars, Logo } from "../../components/ui";
 import { load, registrarRitual, calcStreak, FRASES } from "../../lib/store";
 import { syncNow } from "../../lib/sync";
 import { FASE1 } from "../../lib/receitas";
+import GuiaAudio from "../../components/GuiaAudio";
 
 function fmtTimer(seg) {
   const m = Math.floor(seg / 60), s = seg % 60;
@@ -80,6 +81,13 @@ export default function Ritual() {
           <div className="text-[64px] text-center anim-float">🍵</div>
           <h1 className="text-[25px] font-black tracking-tight mt-4 text-center">Hora do seu chá da noite</h1>
           <p className="text-sub text-[13px] font-semibold text-center mt-1.5">Tome {quando}</p>
+
+          <div className="mt-4">
+            <GuiaAudio texto={FASE1.audioRitual} rotulo="Ouvir o passo a passo (guia em áudio)" />
+            <div className="text-[11.5px] text-sub font-semibold text-center mt-1.5">
+              Prefere ouvir? Aperte o play e siga com calma 💛
+            </div>
+          </div>
 
           <div className="card p-5 mt-5">
             <div className="space-y-3.5">

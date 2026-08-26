@@ -119,6 +119,26 @@ export default function Home() {
         <div className="text-[13px] text-lilac font-semibold leading-relaxed mt-1.5">{fraseDoDia()}</div>
       </div>
 
+      {/* Sua jornada — o que esperar */}
+      <Link href="/jornada" className="card block mt-4 p-[16px]">
+        <div className="flex items-center gap-[14px]">
+          <div className="w-[42px] h-[42px] flex-none rounded-[13px] flex items-center justify-center text-[19px]"
+            style={{ background: "rgba(165,180,252,.1)", border: "1px solid rgba(165,180,252,.3)" }}>🗺️</div>
+          <div className="flex-1">
+            <div className="text-[14.5px] font-extrabold">Sua jornada — o que esperar</div>
+            <div className="text-[12px] text-sub font-semibold mt-[2px]">
+              {!preparou
+                ? "Veja o caminho completo antes de começar"
+                : dia <= 3 ? "Você está na fase de adaptação — saiba o que é normal sentir"
+                : dia <= 7 ? "Noites 4 a 7: a primeira virada do sono — veja o que esperar"
+                : dia <= 14 ? "Semana 2: seu corpo começa a responder — entenda os sinais"
+                : "Rumo à Fase 2 — veja onde você está no caminho"}
+            </div>
+          </div>
+          <span className="text-sub text-[16px]">›</span>
+        </div>
+      </Link>
+
       {/* SONO */}
       <div className="card mt-4 p-[20px_18px]">
         <div className="eyebrow">Qualidade do sono</div>
