@@ -10,6 +10,8 @@ export default function Receita() {
   const router = useRouter();
   const [s, setS] = useState(null);
   const [checks, setChecks] = useState({});
+  const [ingAberto, setIngAberto] = useState(null); // id do ingrediente com ajuda aberta
+  const [copiado, setCopiado] = useState(false);
 
   useEffect(() => {
     const st = load();
@@ -28,6 +30,27 @@ export default function Receita() {
     const n = { ...checks, [id]: !checks[id] };
     setChecks(n);
     localStorage.setItem("noctalev_compras", JSON.stringify(n));
+  }
+
+  async function copiarLista() {
+    try {
+      await navigator.clipboard.writeText(FASE1.listaCompras);
+      setCopiado(true);
+      setTimeout(() => setCopiado(false), 2500);
+    } catch {
+      // fallback antigo
+      const ta = document.createElement("textarea");
+      ta.value = FASE1.listaCompras;
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand("copy"); setCopiado(true); setTimeout(() => setCopiado(false), 2500); } catch {}
+      document.body.removeChild(ta);
+    }
+  }
+
+  function enviarWhatsApp() {
+    const url = `https://wa.me/?text=${encodeURIComponent(FASE1.listaCompras)}`;
+    window.open(url, "_blank");
   }
 
   return (
@@ -68,17 +91,55 @@ export default function Receita() {
       <div className="card mt-5 p-5">
         <div className="eyebrow">Lista de ingredientes</div>
         <div className="text-[12.5px] text-sub font-semibold mt-1">Custo estimado: {FASE1.custo}. Marque o que já comprou:</div>
-        <div className="mt-4 space-y-3">
+        <div className="mt-4 space-y-1">
           {FASE1.ingredientes.map((ing) => (
-            <button key={ing.id} onClick={() => toggle(ing.id)} className="flex items-start gap-3 text-left w-full">
-              <span className={`w-6 h-6 flex-none rounded-lg border flex items-center justify-center text-[13px] mt-[1px] ${
-                checks[ing.id] ? "bg-green/20 border-green text-green" : "border-white/25 text-transparent"
-              }`}>✓</span>
-              <span className={`text-[14px] font-semibold leading-snug ${checks[ing.id] ? "text-sub line-through" : "text-txt"}`}>
-                {ing.txt}
-              </span>
-            </button>
+            <div key={ing.id} className="py-1.5">
+              <div className="flex items-start gap-3">
+                <button onClick={() => toggle(ing.id)} className="flex items-start gap-3 text-left flex-1">
+                  <span className={`w-6 h-6 flex-none rounded-lg border flex items-center justify-center text-[13px] mt-[1px] ${
+                    checks[ing.id] ? "bg-green/20 border-green text-green" : "border-white/25 text-transparent"
+                  }`}>✓</span>
+                  <span className={`text-[14px] font-semibold leading-snug ${checks[ing.id] ? "text-sub line-through" : "text-txt"}`}>
+                    {ing.txt}
+                  </span>
+                </button>
+                <button
+                  onClick={() => setIngAberto(ingAberto === ing.id ? null : ing.id)}
+                  className="flex-none text-[11px] font-extrabold rounded-full px-2.5 py-1 mt-[1px]"
+                  style={{
+                    background: ingAberto === ing.id ? "rgba(165,180,252,.2)" : "rgba(255,255,255,.07)",
+                    color: "#a5b4fc", border: "1px solid rgba(165,180,252,.3)",
+                  }}
+                >
+                  {ingAberto === ing.id ? "fechar" : "não achou?"}
+                </button>
+              </div>
+              {ingAberto === ing.id && (
+                <div className="mt-2 ml-9 rounded-xl p-3.5 space-y-2" style={{ background: "rgba(165,180,252,.07)", border: "1px solid rgba(165,180,252,.2)" }}>
+                  <div className="text-[12.5px] text-sub2 font-semibold leading-relaxed">📍 <b className="text-lilac">Onde achar:</b> {ing.onde}</div>
+                  <div className="text-[12.5px] text-sub2 font-semibold leading-relaxed">🔄 <b className="text-lilac">Alternativa:</b> {ing.alt}</div>
+                  <div className="text-[12.5px] text-sub2 font-semibold leading-relaxed">💡 <b className="text-lilac">Dica:</b> {ing.dica}</div>
+                </div>
+              )}
+            </div>
           ))}
+        </div>
+
+        {/* levar a lista para o mercado */}
+        <div className="mt-4 pt-4 space-y-2.5" style={{ borderTop: "1px solid rgba(255,255,255,.08)" }}>
+          <div className="text-[12.5px] text-sub font-semibold">Vai ao mercado? Leve a lista com você:</div>
+          <div className="flex gap-2.5">
+            <button onClick={copiarLista} className="btn-ghost flex-1 py-3 text-[13px] font-extrabold">
+              {copiado ? "✅ Copiado!" : "📋 Copiar lista"}
+            </button>
+            <button onClick={enviarWhatsApp} className="flex-1 py-3 text-[13px] font-extrabold rounded-xl"
+              style={{ background: "rgba(37,211,102,.13)", border: "1px solid rgba(37,211,102,.4)", color: "#7ee8b2" }}>
+              💬 Enviar no WhatsApp
+            </button>
+          </div>
+          <div className="text-[11.5px] text-sub font-semibold text-center">
+            Dica: envie para você mesma ou para quem for comprar por você 💛
+          </div>
         </div>
       </div>
 

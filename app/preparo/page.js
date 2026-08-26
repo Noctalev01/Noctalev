@@ -5,6 +5,7 @@ import { Stars, Logo } from "../../components/ui";
 import { load, save, concluirPreparo } from "../../lib/store";
 import { syncNow } from "../../lib/sync";
 import { FASE1 } from "../../lib/receitas";
+import GuiaAudio from "../../components/GuiaAudio";
 
 export default function Preparo() {
   const router = useRouter();
@@ -77,6 +78,9 @@ export default function Preparo() {
           <div className="text-[72px] anim-pop" key={passo}>{p.emoji}</div>
           <h1 className="text-[26px] font-black tracking-tight mt-5">{p.titulo}</h1>
           <p className="text-sub2 text-[15.5px] font-semibold mt-4 leading-relaxed px-1">{p.txt}</p>
+          <div className="flex justify-center mt-4">
+            <GuiaAudio texto={`Passo ${passo + 1}. ${p.titulo}. ${p.txt}`} rotulo="Ouvir este passo" compacto />
+          </div>
         </div>
 
         <button onClick={avancar} className="cta-gold w-full py-4 text-[16px]">
