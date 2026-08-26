@@ -1,31 +1,33 @@
 // ============================================================
 // Webhook da Cakto — libera acesso automático pós-compra
 // Configure na Cakto: URL https://SEU-DOMINIO/api/webhook/cakto?secret=SEU_SEGREDO
-// Eventos: compra aprovada (Fase 1, Fase 2, Fase 3)
+// (a Cakto também envia o campo "secret" no corpo — aceitamos os dois)
+//
+// Formato real da Cakto (tipo de disparo "Agrupado"):
+//   { "secret": "...", "event": "purchase_approved", "data": [ {item1}, {item2}... ] }
+// Cada item = uma venda (produto principal + order bumps), com
+// customer.email, product.name, status ("paid"), refundedAt, etc.
 // ============================================================
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "../../../../lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
-function extrairEmail(body) {
-  // Cobre os formatos mais comuns de payload da Cakto/checkouts BR
+function extrairEmail(item) {
   return (
-    body?.customer?.email ||
-    body?.data?.customer?.email ||
-    body?.client?.email ||
-    body?.email ||
-    body?.buyer?.email ||
+    item?.customer?.email ||
+    item?.client?.email ||
+    item?.buyer?.email ||
+    item?.email ||
     null
   );
 }
 
-function extrairProduto(body) {
+function extrairProduto(item) {
   const nome = (
-    body?.product?.name ||
-    body?.data?.product?.name ||
-    body?.product_name ||
-    body?.offer?.name ||
+    item?.product?.name ||
+    item?.offer?.name ||
+    item?.product_name ||
     ""
   ).toLowerCase();
   if (nome.includes("fase 3") || nome.includes("fase3")) return "fase3";
@@ -33,42 +35,25 @@ function extrairProduto(body) {
   return "fase1";
 }
 
-function extrairStatus(body) {
-  const st = (
-    body?.status ||
-    body?.data?.status ||
-    body?.event ||
-    body?.type ||
-    ""
-  ).toString().toLowerCase();
+function extrairStatus(item, evento) {
+  // sinais de reembolso no próprio item
+  if (item?.refundedAt || item?.chargedbackAt || item?.canceledAt) return "reembolso";
+  const st = (item?.status || evento || "").toString().toLowerCase();
+  const reembolso = ["refunded", "refund", "chargeback", "chargedback", "reembolso", "estorn", "canceled", "cancelled"];
   const aprovado = ["approved", "paid", "purchase_approved", "compra aprovada", "aprovada", "completed"];
-  const reembolso = ["refunded", "refund", "chargeback", "reembolso", "estornada"];
   if (reembolso.some((k) => st.includes(k))) return "reembolso";
   if (aprovado.some((k) => st.includes(k)) || st === "") return "aprovado";
   return "outro";
 }
 
-export async function POST(req) {
-  // valida segredo compartilhado (query ?secret= ou header)
-  const url = new URL(req.url);
-  const secret = url.searchParams.get("secret") || req.headers.get("x-webhook-secret");
-  if (!process.env.CAKTO_WEBHOOK_SECRET || secret !== process.env.CAKTO_WEBHOOK_SECRET) {
-    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  }
+async function processarItem(db, item, evento) {
+  const email = extrairEmail(item)?.trim().toLowerCase();
+  if (!email) return { erro: "sem email" };
 
-  let body;
-  try { body = await req.json(); } catch { return NextResponse.json({ error: "invalid json" }, { status: 400 }); }
-
-  const email = extrairEmail(body)?.trim().toLowerCase();
-  if (!email) return NextResponse.json({ error: "email não encontrado no payload" }, { status: 400 });
-
-  const produto = extrairProduto(body);
-  const status = extrairStatus(body);
-  const db = supabaseAdmin();
-  if (!db) return NextResponse.json({ error: "supabase não configurado" }, { status: 500 });
+  const produto = extrairProduto(item);
+  const status = extrairStatus(item, evento);
 
   if (status === "reembolso") {
-    // remove acesso da fase reembolsada
     if (produto === "fase1") {
       await db.from("compradoras").delete().eq("email", email);
     } else {
@@ -76,14 +61,13 @@ export async function POST(req) {
         [produto === "fase2" ? "fase2_paga" : "fase3_paga"]: false,
         atualizado_em: new Date().toISOString(),
       }).eq("email", email);
-      // reflete no perfil se a usuária já existe
       const { data: prof } = await db.from("profiles").select("id").eq("email", email).maybeSingle();
       if (prof) await db.from("profiles").update({ [produto === "fase2" ? "fase2_paga" : "fase3_paga"]: false }).eq("id", prof.id);
     }
-    return NextResponse.json({ ok: true, acao: "reembolso", email, produto });
+    return { acao: "reembolso", email, produto };
   }
 
-  if (status !== "aprovado") return NextResponse.json({ ok: true, acao: "ignorado", status });
+  if (status !== "aprovado") return { acao: "ignorado", email, produto, status };
 
   // compra aprovada → registra/atualiza compradora
   const patch = { email, atualizado_em: new Date().toISOString() };
@@ -103,5 +87,39 @@ export async function POST(req) {
     }
   }
 
-  return NextResponse.json({ ok: true, acao: "liberado", email, produto });
+  return { acao: "liberado", email, produto };
+}
+
+export async function POST(req) {
+  let body;
+  try { body = await req.json(); } catch { return NextResponse.json({ error: "invalid json" }, { status: 400 }); }
+
+  // valida segredo: query ?secret=, header, ou campo "secret" no corpo (formato Cakto)
+  const url = new URL(req.url);
+  const secret = url.searchParams.get("secret") || req.headers.get("x-webhook-secret") || body?.secret;
+  if (!process.env.CAKTO_WEBHOOK_SECRET || secret !== process.env.CAKTO_WEBHOOK_SECRET) {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
+
+  const evento = body?.event || body?.type || "";
+  const db = supabaseAdmin();
+  if (!db) return NextResponse.json({ error: "supabase não configurado" }, { status: 500 });
+
+  // "data" pode ser: lista de itens (Agrupado), objeto único, ou o próprio body
+  let itens;
+  if (Array.isArray(body?.data)) itens = body.data;
+  else if (body?.data && typeof body.data === "object") itens = [body.data];
+  else itens = [body];
+
+  const resultados = [];
+  for (const item of itens) {
+    try { resultados.push(await processarItem(db, item, evento)); }
+    catch (e) { resultados.push({ erro: String(e?.message || e) }); }
+  }
+
+  const algumOk = resultados.some((r) => r.acao === "liberado" || r.acao === "reembolso");
+  if (!algumOk && resultados.every((r) => r.erro === "sem email")) {
+    return NextResponse.json({ error: "email não encontrado no payload" }, { status: 400 });
+  }
+  return NextResponse.json({ ok: true, evento, resultados });
 }
