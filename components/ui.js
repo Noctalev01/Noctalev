@@ -49,12 +49,15 @@ function IconTab({ name, on }) {
     return (<svg width="23" height="23" viewBox="0 0 24 24"><path {...p} d="M12 21c-5 0-8-3.4-8-8 0-4.2 3.2-8.4 8-9.5 4.8 1.1 8 5.3 8 9.5 0 4.6-3 8-8 8Z" /><path {...p} d="M12 21V9.5M12 13l3.2-2.6M12 15.5 8.8 13" /></svg>);
   if (name === "progresso")
     return (<svg width="23" height="23" viewBox="0 0 24 24"><path {...p} d="M4 20V4M4 20h16" /><path {...p} d="M7.5 15.5l4-4.5 3 2.5 5-6" /></svg>);
+  if (name === "turma")
+    return (<svg width="23" height="23" viewBox="0 0 24 24"><circle {...p} cx="9" cy="8.5" r="3.2" /><path {...p} d="M3.5 19.5c0-3 2.5-5 5.5-5s5.5 2 5.5 5" /><path {...p} d="M15.5 5.8a3.2 3.2 0 0 1 0 5.4M17.5 14.9c1.8.8 3 2.3 3 4.6" /></svg>);
   return (<svg width="23" height="23" viewBox="0 0 24 24"><rect {...p} x="4" y="8.5" width="16" height="11" rx="2" /><path {...p} d="M4 12.5h16M12 8.5v11M12 8.5c-3 0-4.6-1.4-4.6-3A1.9 1.9 0 0 1 9.3 3.6c2 0 2.7 2.6 2.7 4.9 0-2.3.7-4.9 2.7-4.9a1.9 1.9 0 0 1 1.9 1.9c0 1.6-1.6 3-4.6 3Z" /></svg>);
 }
 
 const TABS = [
   { href: "/", icon: "inicio", label: "Início" },
   { href: "/receita", icon: "receita", label: "Receita" },
+  { href: "/turma", icon: "turma", label: "Turma" },
   { href: "/progresso", icon: "progresso", label: "Progresso" },
   { href: "/bonus", icon: "bonus", label: "Bônus" },
 ];

@@ -11,6 +11,7 @@ import {
 import { supabase } from "../lib/supabase";
 import { pullFromCloud, syncNow } from "../lib/sync";
 import { agendarLembretes, statusPermissao, pedirPermissao, notificarTeste } from "../lib/notificacoes";
+import { rankingDoDia } from "../lib/turma";
 import InstalarApp from "../components/InstalarApp";
 
 function fmtKg(n) {
@@ -118,6 +119,29 @@ export default function Home() {
         <div className="eyebrow" style={{ color: "#a5b4fc" }}>Sua frase de hoje</div>
         <div className="text-[13px] text-lilac font-semibold leading-relaxed mt-1.5">{fraseDoDia()}</div>
       </div>
+
+      {/* Sua turma — posição no ranking */}
+      {preparou && (() => {
+        const rk = rankingDoDia(s);
+        const med = ["🥇", "🥈", "🥉"];
+        return (
+          <Link href="/turma" className="card block mt-4 p-[16px]">
+            <div className="flex items-center gap-[14px]">
+              <div className="w-[42px] h-[42px] flex-none rounded-[13px] flex items-center justify-center text-[20px]"
+                style={{ background: "rgba(251,211,141,.1)", border: "1px solid rgba(251,211,141,.35)" }}>
+                {rk.posicao <= 3 ? med[rk.posicao - 1] : "👭"}
+              </div>
+              <div className="flex-1">
+                <div className="text-[14.5px] font-extrabold">Sua turma · você está em {rk.posicao}º</div>
+                <div className="text-[12px] text-sub font-semibold mt-[2px]">
+                  {rk.posicao === 1 ? "Liderando! Veja como a turma está 🔥" : `Entre ${rk.total} mulheres — veja o ranking do dia ${rk.dia}`}
+                </div>
+              </div>
+              <span className="text-sub text-[16px]">›</span>
+            </div>
+          </Link>
+        );
+      })()}
 
       {/* Sua jornada — o que esperar */}
       <Link href="/jornada" className="card block mt-4 p-[16px]">
