@@ -96,7 +96,9 @@ export default function Checkin() {
         {tela === 2 && (
           <div className="flex-1 flex flex-col justify-center">
             <h1 className="text-[25px] font-black tracking-tight text-center">Seu peso na<br />balança hoje:</h1>
-            <p className="text-sub text-[13px] font-semibold text-center mt-2">Dica: pese-se sempre em jejum ⚖️</p>
+            <p className="text-sub text-[13px] font-semibold text-center mt-2 leading-relaxed">
+              ⚖️ Pese-se sempre do mesmo jeito: <b className="text-gold">de manhã, em jejum</b>, depois de ir ao banheiro e antes do café. É assim que a balança mostra seu resultado de verdade.
+            </p>
             <div className="flex items-center gap-3 mt-7">
               <input inputMode="decimal" placeholder="Ex: 76,4" value={peso} onChange={(e) => setPeso(e.target.value)}
                 className="flex-1 px-4 py-5 text-[28px] font-black text-center" autoFocus />

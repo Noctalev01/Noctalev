@@ -113,7 +113,8 @@ export default function Home() {
 
       {/* Frase do dia */}
       <div className="card mt-4 p-4" style={{ background: "rgba(165,180,252,.05)" }}>
-        <div className="text-[13px] text-lilac font-semibold leading-relaxed">{fraseDoDia()}</div>
+        <div className="eyebrow" style={{ color: "#a5b4fc" }}>Sua frase de hoje</div>
+        <div className="text-[13px] text-lilac font-semibold leading-relaxed mt-1.5">{fraseDoDia()}</div>
       </div>
 
       {/* SONO */}
