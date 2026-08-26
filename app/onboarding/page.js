@@ -14,11 +14,10 @@ const SLIDES = [
 
 export default function Onboarding() {
   const router = useRouter();
-  const [etapa, setEtapa] = useState("login"); // login | codigo | slides | quiz | compromisso
+  const [etapa, setEtapa] = useState("login"); // login | slides | quiz | compromisso
   const [slide, setSlide] = useState(0);
   const [q, setQ] = useState(0);
   const [email, setEmail] = useState("");
-  const [codigo, setCodigo] = useState("");
   const [enviando, setEnviando] = useState(false);
   const [erro, setErro] = useState("");
   const [userId, setUserId] = useState(null);
@@ -44,43 +43,28 @@ export default function Onboarding() {
     check();
   }, [router]);
 
-  async function enviarCodigo() {
+  // LOGIN INSTANTÂNEO: digita o email → entra na hora (sem código, sem senha, sem confirmar email).
+  // O servidor valida a compra (Cakto) e devolve um token que vira sessão aqui.
+  async function entrar() {
     setErro("");
     const em = email.trim().toLowerCase();
     if (!em.includes("@")) { setErro("Digite um email válido."); return; }
     setEnviando(true);
     try {
-      // 1) verifica se o email tem acesso (compra na Cakto)
-      const r = await fetch("/api/acesso", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: em }) });
+      const r = await fetch("/api/entrar", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: em }) });
       const j = await r.json();
-      if (!j.permitido) { setErro(j.motivo || "Acesso não encontrado para este email."); setEnviando(false); return; }
-      // 2) envia código de 6 dígitos por email (sem senha!)
-      if (supabase) {
-        const { error } = await supabase.auth.signInWithOtp({ email: em, options: { shouldCreateUser: true } });
-        if (error) { setErro("Não foi possível enviar o código: " + error.message); setEnviando(false); return; }
-        setEtapa("codigo");
-      } else {
-        setEtapa("slides"); // modo protótipo sem Supabase
+      if (!j.ok) { setErro(j.motivo || "Não foi possível entrar. Tente novamente."); setEnviando(false); return; }
+      if (supabase && j.token_hash) {
+        const { data, error } = await supabase.auth.verifyOtp({ token_hash: j.token_hash, type: "email" });
+        if (error || !data?.session) { setErro("Não foi possível iniciar sua sessão. Tente de novo."); setEnviando(false); return; }
+        setUserId(data.session.user.id);
+        // se já tem perfil na nuvem (voltou em outro aparelho), pula onboarding
+        const puxado = await pullFromCloud(data.session.user.id);
+        if (puxado?.perfil) { router.replace("/"); return; }
       }
-    } catch {
-      setErro("Erro de conexão. Tente novamente.");
-    }
-    setEnviando(false);
-  }
-
-  async function verificarCodigo() {
-    setErro("");
-    setEnviando(true);
-    try {
-      const { data, error } = await supabase.auth.verifyOtp({ email: email.trim().toLowerCase(), token: codigo.trim(), type: "email" });
-      if (error || !data?.session) { setErro("Código incorreto ou expirado. Confira o email e tente de novo."); setEnviando(false); return; }
-      setUserId(data.session.user.id);
-      // se já tem perfil na nuvem (voltou em outro aparelho), pula onboarding
-      const puxado = await pullFromCloud(data.session.user.id);
-      if (puxado?.perfil) { router.replace("/"); return; }
       setEtapa("slides");
     } catch {
-      setErro("Erro ao verificar. Tente novamente.");
+      setErro("Erro de conexão. Tente novamente.");
     }
     setEnviando(false);
   }
@@ -110,43 +94,23 @@ export default function Onboarding() {
           <div className="flex-1 flex flex-col justify-center">
             <h1 className="text-[26px] font-black tracking-tight text-center">Bem-vinda! 💛</h1>
             <p className="text-sub2 text-[14.5px] font-semibold text-center mt-2 leading-relaxed">
-              Digite o email usado na sua compra.<br />Você recebe um <b className="text-gold">código de 6 dígitos</b> — sem senha!
+              Digite o <b className="text-gold">email usado na sua compra</b><br />e entre na hora — sem senha, sem código!
             </p>
             <div className="mt-8">
-              <input type="email" inputMode="email" autoComplete="email" placeholder="Seu email" value={email}
+              <input type="email" inputMode="email" autoComplete="email" placeholder="Seu email da compra" value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter" && email.includes("@") && !enviando) entrar(); }}
                 className="w-full px-4 py-4 text-[16px] font-semibold" />
             </div>
             {erro && <div className="card p-3 mt-4 text-[13px] font-bold text-[#e57373] leading-relaxed">{erro}</div>}
             <button disabled={!email.includes("@") || enviando}
-              onClick={enviarCodigo}
+              onClick={entrar}
               className="cta-gold w-full py-4 mt-6 text-[16px] disabled:opacity-40">
-              {enviando ? "Enviando código..." : "Receber meu código 📩"}
+              {enviando ? "Entrando..." : "Entrar ✨"}
             </button>
             <p className="text-sub text-[12px] font-semibold text-center mt-4">
-              O código chega em segundos. Confira também a caixa de spam.
+              Seu acesso é liberado automaticamente após a compra. 🛒✨
             </p>
-          </div>
-        )}
-
-        {etapa === "codigo" && (
-          <div className="flex-1 flex flex-col justify-center">
-            <div className="text-[56px] text-center anim-float">📩</div>
-            <h1 className="text-[24px] font-black tracking-tight text-center mt-4">Digite o código</h1>
-            <p className="text-sub2 text-[14px] font-semibold text-center mt-2 leading-relaxed">
-              Enviamos 6 dígitos para<br /><b className="text-gold">{email}</b>
-            </p>
-            <input inputMode="numeric" maxLength={6} placeholder="• • • • • •" value={codigo}
-              onChange={(e) => setCodigo(e.target.value.replace(/\D/g, ""))}
-              className="w-full px-4 py-5 mt-7 text-[30px] font-black text-center tracking-[10px]" autoFocus />
-            {erro && <div className="card p-3 mt-4 text-[13px] font-bold text-[#e57373] leading-relaxed">{erro}</div>}
-            <button disabled={codigo.length !== 6 || enviando} onClick={verificarCodigo}
-              className="cta-gold w-full py-4 mt-6 text-[16px] disabled:opacity-40">
-              {enviando ? "Verificando..." : "Entrar ✨"}
-            </button>
-            <button onClick={() => { setCodigo(""); setEtapa("login"); }} className="mt-4 text-[13px] font-bold text-sub text-center">
-              Trocar email ou reenviar código
-            </button>
           </div>
         )}
 

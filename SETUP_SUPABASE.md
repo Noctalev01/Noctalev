@@ -1,6 +1,6 @@
-# 🛠️ Setup do Supabase — 2 passos de copiar e colar (5 minutos)
+# 🛠️ Setup do Supabase
 
-## PASSO 1 — Criar as tabelas do banco
+## ✅ PASSO 1 — Criar as tabelas do banco (JÁ FEITO!)
 
 1. Abra o SQL Editor do seu projeto (link direto):
    **https://supabase.com/dashboard/project/ctnyilyoyzutpqlnleqx/sql/new**
@@ -8,41 +8,28 @@
 3. Cole no editor e clique em **RUN** (botão verde, canto inferior direito)
 4. Deve aparecer "Success. No rows returned" ✅
 
-## PASSO 2 — Configurar o email com código de 6 dígitos
+## ✅ PASSO 2 — Email? NÃO PRECISA MAIS! 🎉
 
-Por padrão o Supabase envia um *link*. Para enviar o **código de 6 dígitos**
-(melhor para nosso público), ajuste o template:
+O login agora é **instantâneo**: a cliente digita o email da compra e entra
+na hora — **nenhum email é enviado**, nada de código, nada de confirmação.
 
-1. Vá em **Authentication → Emails** (ou "Email Templates"):
-   **https://supabase.com/dashboard/project/ctnyilyoyzutpqlnleqx/auth/templates**
-2. Selecione o template **"Magic Link"**
-3. Substitua o conteúdo por este (pode personalizar depois):
+Como funciona por baixo dos panos:
+1. Cliente compra na Cakto → o **webhook** grava o email na tabela `compradoras`
+2. Cliente digita o email no app → `/api/entrar` confere se está em `compradoras`
+3. Se sim, o servidor gera um token de sessão internamente (`generateLink`)
+   e o app entra direto — **sem passar pelo sistema de emails do Supabase**
+4. Reembolso na Cakto → webhook remove o email → acesso bloqueado na hora
 
-```html
-<h2>🌙 Seu código de acesso NoctaLev</h2>
-<p>Olá! Use o código abaixo para entrar no seu protocolo:</p>
-<h1 style="font-size:42px;letter-spacing:8px;color:#b45309">{{ .Token }}</h1>
-<p>O código vale por 1 hora. Se você não pediu este acesso, ignore este email.</p>
-<p>Bons sonhos! 💛<br>Equipe NoctaLev</p>
-```
-
-4. Clique em **Save**
-
-> 💡 O `{{ .Token }}` é o que faz aparecer o código de 6 dígitos no email.
-
-## (Opcional) PASSO 3 — Aumentar limite de emails
-
-O Supabase grátis envia ~2 emails/hora por padrão (email de teste deles).
-Para produção com muitas clientes:
-- **Authentication → Rate Limits** → aumente "Email OTP"
-- Ideal: conectar um SMTP próprio (Resend, Brevo ou o email do seu domínio)
-  em **Project Settings → Auth → SMTP Settings** — o Resend tem plano grátis
-  com 3.000 emails/mês e é o mais fácil.
+> 🔒 A segurança vem da própria compra: só quem comprou tem o email na lista.
+> Não é necessário plano PRO nem configurar templates/SMTP.
 
 ## ✅ Como saber que funcionou
 
-Depois do Passo 1, me avise aqui no chat — eu rodo uma verificação automática
-que testa as tabelas, o webhook e a lista de compradoras de ponta a ponta.
+Testado de ponta a ponta em 26/08/2026:
+- ✅ Email sem compra → bloqueado com mensagem amigável
+- ✅ Webhook "compra aprovada" → email liberado na tabela `compradoras`
+- ✅ Login instantâneo → sessão criada sem enviar email
+- ✅ Webhook "reembolso" → acesso revogado imediatamente
 
 ---
 
@@ -55,14 +42,23 @@ que testa as tabelas, o webhook e a lista de compradoras de ponta a ponta.
 | `SUPABASE_SERVICE_ROLE_KEY` | (service_role secret) |
 | `ADMIN_PIN` | PIN do painel /admin (troque o 2026!) |
 | `CAKTO_WEBHOOK_SECRET` | segredo do webhook (troque!) |
-| `GATE_BY_PURCHASE` | `false` (testes) → `true` (produção: só compradora entra) |
+| `GATE_BY_PURCHASE` | `true` = só compradora entra (produção) / `false` = qualquer email (testes) |
 
-## 🔗 Webhook da Cakto (quando formos ativar)
+## 🔗 Webhook da Cakto (o passo que automatiza tudo)
 
-Na Cakto, em Integrações → Webhooks, cadastre:
+Na Cakto, em **Integrações → Webhooks**, cadastre a URL:
 
 ```
 https://SEU-DOMINIO.vercel.app/api/webhook/cakto?secret=SEU_CAKTO_WEBHOOK_SECRET
 ```
 
-Evento: **Compra aprovada** (e "Reembolso", se disponível — o app já trata os dois).
+Eventos: **Compra aprovada** (obrigatório) e **Reembolso/Chargeback** (recomendado —
+o app já trata os dois e revoga o acesso automaticamente).
+
+Com isso, o fluxo fica 100% automático:
+**compra na Cakto → acesso liberado em segundos → cliente entra só com o email** 🚀
+
+## 🆘 Liberação manual (sem esperar webhook)
+
+Se precisar liberar alguém na mão (ex.: compra antiga, troca de email):
+abra **`/admin`** no app → aba **"Acesso"** → digite o email → **Liberar**.

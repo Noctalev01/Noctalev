@@ -77,12 +77,12 @@ Este protótipo usa `localStorage` (1 usuária = 1 dispositivo), com a camada de
 
 ## ☁️ Integração Supabase (IMPLEMENTADA)
 
-- **Login sem senha**: email + código de 6 dígitos (OTP) — `supabase.auth.signInWithOtp`
+- **Login instantâneo só com email** (sem senha, sem código, sem email de confirmação): `/api/entrar` valida a compra, gera o token no servidor (`auth.admin.generateLink`) e o app cria a sessão com `verifyOtp({ token_hash })` — nenhum email é enviado, não requer plano PRO nem SMTP
 - **Sync local-first**: app funciona offline; `lib/sync.js` faz pull no login/abertura e push após cada ação
-- **Gate de compra**: `/api/acesso` verifica a tabela `compradoras` antes de enviar o código (ativar com `GATE_BY_PURCHASE=true`)
+- **Gate de compra**: `/api/entrar` só deixa entrar emails presentes na tabela `compradoras` (ativar com `GATE_BY_PURCHASE=true`); reembolso na Cakto revoga o acesso automaticamente
 - **Webhook Cakto**: `/api/webhook/cakto?secret=...` — compra aprovada libera acesso/fases automaticamente; trata reembolso
 - **Admin real**: `/api/admin` (service_role) — lista todas as usuárias, detalhe, ações manuais, notas, CSV da base
-- **Setup**: siga o passo a passo em `SETUP_SUPABASE.md` (2 passos de copiar/colar)
+- **Setup**: veja `SETUP_SUPABASE.md` — só é preciso rodar o `schema.sql` uma vez (já feito); não há configuração de email
 
 ### Variáveis de ambiente (`.env.local` / Vercel)
 ```
