@@ -1,8 +1,10 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Stars, Logo } from "../../components/ui";
 import { load, salvarPerfil } from "../../lib/store";
+import { supabase } from "../../lib/supabase";
+import { pullFromCloud, pushProfile } from "../../lib/sync";
 
 const SLIDES = [
   { emoji: "🌙", titulo: "Seu protocolo começa hoje", texto: "O NoctaLev usa o poder do seu sono para destravar o emagrecimento. Simples, natural e no seu ritmo." },
@@ -12,26 +14,89 @@ const SLIDES = [
 
 export default function Onboarding() {
   const router = useRouter();
-  const [etapa, setEtapa] = useState("login"); // login | slides | quiz | compromisso
+  const [etapa, setEtapa] = useState("login"); // login | codigo | slides | quiz | compromisso
   const [slide, setSlide] = useState(0);
   const [q, setQ] = useState(0);
   const [email, setEmail] = useState("");
-  const [senha, setSenha] = useState("");
+  const [codigo, setCodigo] = useState("");
+  const [enviando, setEnviando] = useState(false);
+  const [erro, setErro] = useState("");
+  const [userId, setUserId] = useState(null);
   const [f, setF] = useState({ nome: "", pesoInicial: "", pesoMeta: "", dificuldade: null, refluxo: null, cafeina: null });
 
   const set = (k, v) => setF((p) => ({ ...p, [k]: v }));
 
-  function concluir() {
+  // Se já existe sessão + perfil, vai direto para a Home
+  useEffect(() => {
+    async function check() {
+      if (!supabase) return;
+      const { data } = await supabase.auth.getSession();
+      const sess = data?.session;
+      if (sess) {
+        setUserId(sess.user.id);
+        const puxado = await pullFromCloud(sess.user.id);
+        if (puxado?.perfil) { router.replace("/"); return; }
+        if (load().perfil) { router.replace("/"); return; }
+        setEmail(sess.user.email || "");
+        setEtapa("slides"); // logada mas sem perfil → segue onboarding
+      }
+    }
+    check();
+  }, [router]);
+
+  async function enviarCodigo() {
+    setErro("");
+    const em = email.trim().toLowerCase();
+    if (!em.includes("@")) { setErro("Digite um email válido."); return; }
+    setEnviando(true);
+    try {
+      // 1) verifica se o email tem acesso (compra na Cakto)
+      const r = await fetch("/api/acesso", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: em }) });
+      const j = await r.json();
+      if (!j.permitido) { setErro(j.motivo || "Acesso não encontrado para este email."); setEnviando(false); return; }
+      // 2) envia código de 6 dígitos por email (sem senha!)
+      if (supabase) {
+        const { error } = await supabase.auth.signInWithOtp({ email: em, options: { shouldCreateUser: true } });
+        if (error) { setErro("Não foi possível enviar o código: " + error.message); setEnviando(false); return; }
+        setEtapa("codigo");
+      } else {
+        setEtapa("slides"); // modo protótipo sem Supabase
+      }
+    } catch {
+      setErro("Erro de conexão. Tente novamente.");
+    }
+    setEnviando(false);
+  }
+
+  async function verificarCodigo() {
+    setErro("");
+    setEnviando(true);
+    try {
+      const { data, error } = await supabase.auth.verifyOtp({ email: email.trim().toLowerCase(), token: codigo.trim(), type: "email" });
+      if (error || !data?.session) { setErro("Código incorreto ou expirado. Confira o email e tente de novo."); setEnviando(false); return; }
+      setUserId(data.session.user.id);
+      // se já tem perfil na nuvem (voltou em outro aparelho), pula onboarding
+      const puxado = await pullFromCloud(data.session.user.id);
+      if (puxado?.perfil) { router.replace("/"); return; }
+      setEtapa("slides");
+    } catch {
+      setErro("Erro ao verificar. Tente novamente.");
+    }
+    setEnviando(false);
+  }
+
+  async function concluir() {
     const s = load();
     salvarPerfil(s, {
       nome: f.nome.trim(),
-      email: email.trim(),
+      email: email.trim().toLowerCase(),
       pesoInicial: parseFloat(String(f.pesoInicial).replace(",", ".")),
       pesoMeta: parseFloat(String(f.pesoMeta).replace(",", ".")),
       dificuldade: f.dificuldade,
       refluxo: f.refluxo === true,
       cafeina: f.cafeina === true,
     });
+    if (userId) await pushProfile(userId); // salva na nuvem
     router.replace("/preparo");
   }
 
@@ -45,22 +110,43 @@ export default function Onboarding() {
           <div className="flex-1 flex flex-col justify-center">
             <h1 className="text-[26px] font-black tracking-tight text-center">Bem-vinda! 💛</h1>
             <p className="text-sub2 text-[14.5px] font-semibold text-center mt-2 leading-relaxed">
-              Entre com o email usado na sua compra para acessar seu protocolo.
+              Digite o email usado na sua compra.<br />Você recebe um <b className="text-gold">código de 6 dígitos</b> — sem senha!
             </p>
-            <div className="mt-8 space-y-3">
-              <input type="email" placeholder="Seu email" value={email} onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-4 text-[16px] font-semibold" />
-              <input type="password" placeholder="Sua senha" value={senha} onChange={(e) => setSenha(e.target.value)}
+            <div className="mt-8">
+              <input type="email" inputMode="email" autoComplete="email" placeholder="Seu email" value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 className="w-full px-4 py-4 text-[16px] font-semibold" />
             </div>
-            <button disabled={!email.includes("@") || senha.length < 4}
-              onClick={() => setEtapa("slides")}
+            {erro && <div className="card p-3 mt-4 text-[13px] font-bold text-[#e57373] leading-relaxed">{erro}</div>}
+            <button disabled={!email.includes("@") || enviando}
+              onClick={enviarCodigo}
               className="cta-gold w-full py-4 mt-6 text-[16px] disabled:opacity-40">
-              Entrar no meu protocolo
+              {enviando ? "Enviando código..." : "Receber meu código 📩"}
             </button>
             <p className="text-sub text-[12px] font-semibold text-center mt-4">
-              Primeira vez? Sua conta é criada automaticamente com este email.
+              O código chega em segundos. Confira também a caixa de spam.
             </p>
+          </div>
+        )}
+
+        {etapa === "codigo" && (
+          <div className="flex-1 flex flex-col justify-center">
+            <div className="text-[56px] text-center anim-float">📩</div>
+            <h1 className="text-[24px] font-black tracking-tight text-center mt-4">Digite o código</h1>
+            <p className="text-sub2 text-[14px] font-semibold text-center mt-2 leading-relaxed">
+              Enviamos 6 dígitos para<br /><b className="text-gold">{email}</b>
+            </p>
+            <input inputMode="numeric" maxLength={6} placeholder="• • • • • •" value={codigo}
+              onChange={(e) => setCodigo(e.target.value.replace(/\D/g, ""))}
+              className="w-full px-4 py-5 mt-7 text-[30px] font-black text-center tracking-[10px]" autoFocus />
+            {erro && <div className="card p-3 mt-4 text-[13px] font-bold text-[#e57373] leading-relaxed">{erro}</div>}
+            <button disabled={codigo.length !== 6 || enviando} onClick={verificarCodigo}
+              className="cta-gold w-full py-4 mt-6 text-[16px] disabled:opacity-40">
+              {enviando ? "Verificando..." : "Entrar ✨"}
+            </button>
+            <button onClick={() => { setCodigo(""); setEtapa("login"); }} className="mt-4 text-[13px] font-bold text-sub text-center">
+              Trocar email ou reenviar código
+            </button>
           </div>
         )}
 

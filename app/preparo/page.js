@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Stars, Logo } from "../../components/ui";
 import { load, save, concluirPreparo } from "../../lib/store";
+import { syncNow } from "../../lib/sync";
 import { FASE1 } from "../../lib/receitas";
 
 function fmtCountdown(ms) {
@@ -47,11 +48,13 @@ export default function Preparo() {
       st.preparoIniciadoEm = new Date().toISOString();
       st.preparoPasso = passo;
       setS(save(st));
+      syncNow();
       return; // fica na tela do countdown
     }
     if (passo + 1 >= total) {
       concluirPreparo(st);
       setPronto(true);
+      syncNow();
       return;
     }
     st.preparoPasso = passo + 1;

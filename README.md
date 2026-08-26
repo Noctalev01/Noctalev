@@ -74,6 +74,26 @@ Este protótipo usa `localStorage` (1 usuária = 1 dispositivo), com a camada de
 4. Marque `role='admin'` no seu perfil para acessar `/admin` em produção
 5. Deploy na Vercel
 
+
+## ☁️ Integração Supabase (IMPLEMENTADA)
+
+- **Login sem senha**: email + código de 6 dígitos (OTP) — `supabase.auth.signInWithOtp`
+- **Sync local-first**: app funciona offline; `lib/sync.js` faz pull no login/abertura e push após cada ação
+- **Gate de compra**: `/api/acesso` verifica a tabela `compradoras` antes de enviar o código (ativar com `GATE_BY_PURCHASE=true`)
+- **Webhook Cakto**: `/api/webhook/cakto?secret=...` — compra aprovada libera acesso/fases automaticamente; trata reembolso
+- **Admin real**: `/api/admin` (service_role) — lista todas as usuárias, detalhe, ações manuais, notas, CSV da base
+- **Setup**: siga o passo a passo em `SETUP_SUPABASE.md` (2 passos de copiar/colar)
+
+### Variáveis de ambiente (`.env.local` / Vercel)
+```
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
+ADMIN_PIN=
+CAKTO_WEBHOOK_SECRET=
+GATE_BY_PURCHASE=false
+```
+
 ## ⚠️ Aviso
 
 Este protocolo não substitui acompanhamento médico. Não indicado para grávidas, lactantes e crianças.

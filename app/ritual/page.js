@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Stars, Logo } from "../../components/ui";
 import { load, registrarRitual, calcStreak, hojeSP, FRASES } from "../../lib/store";
+import { syncNow } from "../../lib/sync";
 import { FASE1 } from "../../lib/receitas";
 
 export default function Ritual() {
@@ -29,6 +30,7 @@ export default function Ritual() {
     setStreak(calcStreak(st));
     setS(st);
     setFeito(true);
+    syncNow();
   }
 
   if (feito) {

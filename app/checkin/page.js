@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Stars, Logo } from "../../components/ui";
 import { load, fazerCheckin, calcStreak, hojeSP, SONO_OPTS, FRASES } from "../../lib/store";
+import { syncNow } from "../../lib/sync";
 
 const HORAS = [
   { v: "<5", t: "Menos de 5h" }, { v: "5-6", t: "5 a 6h" }, { v: "6-7", t: "6 a 7h" },
@@ -36,6 +37,7 @@ export default function Checkin() {
     setStreak(calcStreak(st));
     setS(st);
     setTela(3);
+    syncNow(); // sobe para a nuvem em segundo plano
   }
 
   return (

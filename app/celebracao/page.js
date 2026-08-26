@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Stars } from "../../components/ui";
 import { load, save } from "../../lib/store";
+import { syncNow } from "../../lib/sync";
 
 export default function Celebracao() {
   const router = useRouter();
@@ -20,6 +21,7 @@ export default function Celebracao() {
   function fechar() {
     const st = { ...s, celebracaoVista: true };
     save(st);
+    syncNow();
     router.replace("/");
   }
 

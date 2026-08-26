@@ -126,3 +126,24 @@ create policy "notas admin" on public.notas_admin for all using (public.is_admin
 -- Índices úteis para o painel admin
 create index idx_checkins_user_data on public.checkins (user_id, data desc);
 create index idx_rituais_user_data on public.rituais (user_id, data desc);
+
+-- ============================================================
+-- COMPRADORAS (liberação de acesso por email — integração Cakto)
+-- Sem policies = acessível APENAS via service_role (servidor)
+-- ============================================================
+create table public.compradoras (
+  email text primary key,
+  produto text default 'fase1',
+  fase2_paga boolean default false,
+  fase3_paga boolean default false,
+  criado_em timestamptz default now(),
+  atualizado_em timestamptz default now()
+);
+alter table public.compradoras enable row level security;
+
+-- email no profile para o painel admin
+alter table public.profiles add column if not exists email text;
+
+-- gamificação persistida no perfil
+alter table public.profiles add column if not exists pontos integer default 0;
+alter table public.profiles add column if not exists celebracao_vista boolean default false;

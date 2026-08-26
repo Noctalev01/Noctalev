@@ -7,6 +7,8 @@ import {
   load, saudacao, diaProtocolo, scoreSono, pesoPerdido, pesosOrdenados,
   progressao, calcStreak, hojeSP, verificarDesbloqueio,
 } from "../lib/store";
+import { supabase } from "../lib/supabase";
+import { pullFromCloud, syncNow } from "../lib/sync";
 
 function fmtKg(n) {
   return n.toFixed(1).replace(".", ",");
@@ -17,12 +19,23 @@ export default function Home() {
   const [s, setS] = useState(null);
 
   useEffect(() => {
-    const st = load();
-    if (!st.perfil) { router.replace("/onboarding"); return; }
-    if (verificarDesbloqueio(st) || (st.fase2LiberadaEm && !st.celebracaoVista)) {
-      router.replace("/celebracao"); return;
+    async function init() {
+      // exige sessão quando Supabase está configurado
+      if (supabase) {
+        const { data } = await supabase.auth.getSession();
+        const sess = data?.session;
+        if (!sess) { router.replace("/onboarding"); return; }
+        await pullFromCloud(sess.user.id); // dados mais recentes da nuvem
+      }
+      const st = load();
+      if (!st.perfil) { router.replace("/onboarding"); return; }
+      if (verificarDesbloqueio(st) || (st.fase2LiberadaEm && !st.celebracaoVista)) {
+        syncNow();
+        router.replace("/celebracao"); return;
+      }
+      setS(st);
     }
-    setS(st);
+    init();
   }, [router]);
 
   if (!s) return <div className="app-bg min-h-dvh" />;

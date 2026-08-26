@@ -3,6 +3,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { PageShell, Logo } from "../../components/ui";
 import { load, save, resetAll } from "../../lib/store";
+import { signOut } from "../../lib/supabase";
+import { syncNow } from "../../lib/sync";
 
 export default function Config() {
   const router = useRouter();
@@ -30,11 +32,14 @@ export default function Config() {
     setS(save(st));
     setSalvo(true);
     setTimeout(() => setSalvo(false), 2000);
+    syncNow();
   }
 
-  function sair() {
-    if (confirm("Tem certeza que deseja sair? Seus dados locais serão apagados.")) {
-      resetAll();
+  async function sair() {
+    if (confirm("Tem certeza que deseja sair?")) {
+      await syncNow();      // garante que tudo está salvo na nuvem
+      await signOut();      // encerra a sessão Supabase
+      resetAll();           // limpa dados locais
       router.replace("/onboarding");
     }
   }
