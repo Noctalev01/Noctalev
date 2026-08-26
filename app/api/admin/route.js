@@ -30,6 +30,13 @@ export async function GET(req) {
     return NextResponse.json({ perfil, checkins, rituais, conquistas, notas });
   }
 
+  if (acao === "config") {
+    const { data } = await db.from("configuracoes").select("*");
+    const cfg = {};
+    (data || []).forEach((r) => { cfg[r.chave] = r.valor; });
+    return NextResponse.json({ config: cfg });
+  }
+
   if (acao === "csv") {
     const { data: cks } = await db.from("checkins")
       .select("user_id, data, sono_qualidade, horas_sono, acordou_madrugada, peso, profiles(nome, email)")
@@ -116,6 +123,13 @@ export async function POST(req) {
   }
   else if (acao === "nota") await db.from("notas_admin").insert({ user_id: id, texto: body.texto });
   else if (acao === "add_compradora") await db.from("compradoras").upsert({ email: body.email?.trim().toLowerCase() }, { onConflict: "email" });
+  else if (acao === "salvar_config") {
+    // body.config = { progressao: {...}, checkout: {...}, suporte: {...} }
+    const entradas = Object.entries(body.config || {});
+    for (const [chave, valor] of entradas) {
+      await db.from("configuracoes").upsert({ chave, valor, atualizado_em: new Date().toISOString() }, { onConflict: "chave" });
+    }
+  }
   else return NextResponse.json({ error: "ação desconhecida" }, { status: 400 });
 
   return NextResponse.json({ ok: true });

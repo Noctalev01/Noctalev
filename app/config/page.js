@@ -13,6 +13,7 @@ export default function Config() {
   const [nome, setNome] = useState("");
   const [meta, setMeta] = useState("");
   const [lembrete, setLembrete] = useState("21:30");
+  const [lembreteManha, setLembreteManha] = useState("08:30");
   const [salvo, setSalvo] = useState(false);
   const [permNotif, setPermNotif] = useState("default");
 
@@ -23,6 +24,7 @@ export default function Config() {
     setNome(st.perfil.nome);
     setMeta(String(st.perfil.pesoMeta).replace(".", ","));
     setLembrete(st.config?.lembreteRitual || "21:30");
+    setLembreteManha(st.config?.lembreteCheckin || "08:30");
     setPermNotif(statusPermissao());
   }, [router]);
 
@@ -31,7 +33,7 @@ export default function Config() {
   function salvar() {
     const st = { ...s };
     st.perfil = { ...st.perfil, nome: nome.trim() || st.perfil.nome, pesoMeta: parseFloat(String(meta).replace(",", ".")) || st.perfil.pesoMeta };
-    st.config = { ...st.config, lembreteRitual: lembrete };
+    st.config = { ...st.config, lembreteRitual: lembrete, lembreteCheckin: lembreteManha };
     setS(save(st));
     setSalvo(true);
     setTimeout(() => setSalvo(false), 2000);
@@ -74,6 +76,10 @@ export default function Config() {
         <div>
           <label className="text-[13px] font-bold text-sub">Lembrete do ritual noturno</label>
           <input type="time" value={lembrete} onChange={(e) => setLembrete(e.target.value)} className="w-full px-4 py-3 mt-1.5 text-[15px] font-bold" />
+        </div>
+        <div>
+          <label className="text-[13px] font-bold text-sub">Lembrete do check-in da manhã</label>
+          <input type="time" value={lembreteManha} onChange={(e) => setLembreteManha(e.target.value)} className="w-full px-4 py-3 mt-1.5 text-[15px] font-bold" />
         </div>
         <button onClick={salvar} className="cta-gold w-full py-3.5 text-[15px]">
           {salvo ? "Salvo! ✅" : "Salvar alterações"}

@@ -23,6 +23,7 @@ export default function Admin() {
   const [carregando, setCarregando] = useState(false);
   const [nota, setNota] = useState("");
   const [emailNova, setEmailNova] = useState("");
+  const [cfg, setCfg] = useState(null); // configurações globais (progressão/checkout/suporte)
 
   useEffect(() => {
     const saved = sessionStorage.getItem("noctalev_admin_pin");
@@ -49,6 +50,30 @@ export default function Admin() {
   async function recarregar() {
     const r = await fetch(`/api/admin?pin=${encodeURIComponent(pin)}&acao=lista`);
     setDados(await r.json());
+  }
+
+  async function carregarConfig() {
+    const r = await fetch(`/api/admin?pin=${encodeURIComponent(pin)}&acao=config`);
+    const j = await r.json();
+    const c = j.config || {};
+    setCfg({
+      diasInternos: c.progressao?.diasInternos ?? 7,
+      minCheckins: c.progressao?.minCheckins ?? 4,
+      maxDias: c.progressao?.maxDias ?? 14,
+      checkoutFase2: c.checkout?.fase2 || "",
+      checkoutFase3: c.checkout?.fase3 || "",
+      whatsapp: c.suporte?.whatsapp || "",
+    });
+  }
+
+  async function salvarConfig() {
+    await acao("salvar_config", {
+      config: {
+        progressao: { diasInternos: Number(cfg.diasInternos) || 7, minCheckins: Number(cfg.minCheckins) || 4, maxDias: Number(cfg.maxDias) || 14 },
+        checkout: { fase2: cfg.checkoutFase2.trim(), fase3: cfg.checkoutFase3.trim() },
+        suporte: { whatsapp: cfg.whatsapp.trim() },
+      },
+    });
   }
 
   async function abrirDetalhe(id) {
@@ -96,6 +121,7 @@ export default function Admin() {
     { id: "dash", t: "📊 Dashboard" },
     { id: "lista", t: "👥 Usuárias" },
     { id: "acesso", t: "🔑 Acessos" },
+    { id: "config", t: "⚙️ Config" },
   ];
 
   return (
@@ -113,7 +139,7 @@ export default function Admin() {
 
         <div className="flex gap-2 mt-5 flex-wrap">
           {TABS.map((t) => (
-            <button key={t.id} onClick={() => setTab(t.id)}
+            <button key={t.id} onClick={() => { setTab(t.id); if (t.id === "config" && !cfg) carregarConfig(); }}
               className={`text-[13px] font-bold px-4 py-2 rounded-full ${tab === t.id ? "bg-gold text-[#3c2a10]" : "bg-white/8 text-sub2"}`}>
               {t.t}
             </button>
@@ -218,6 +244,59 @@ export default function Admin() {
               </div>
             </Section>
           </>
+        )}
+
+        {tab === "config" && (
+          !cfg ? (
+            <div className="card p-5 mt-4 text-sub text-[13.5px] font-semibold text-center">Carregando configurações...</div>
+          ) : (
+            <>
+              <Section title="🎯 Progressão oculta (Fase 2)">
+                <p className="text-sub text-[12px] font-semibold mb-3 leading-relaxed">
+                  A usuária NUNCA vê estes números — ela só vê a barra em %. Ajuste com cuidado.
+                </p>
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <label className="text-[11.5px] font-bold text-sub">Dias internos</label>
+                    <input inputMode="numeric" value={cfg.diasInternos} onChange={(e) => setCfg({ ...cfg, diasInternos: e.target.value })}
+                      className="w-full px-3 py-2.5 mt-1 text-[14px] font-bold text-center" />
+                  </div>
+                  <div>
+                    <label className="text-[11.5px] font-bold text-sub">Mín. check-ins</label>
+                    <input inputMode="numeric" value={cfg.minCheckins} onChange={(e) => setCfg({ ...cfg, minCheckins: e.target.value })}
+                      className="w-full px-3 py-2.5 mt-1 text-[14px] font-bold text-center" />
+                  </div>
+                  <div>
+                    <label className="text-[11.5px] font-bold text-sub">Máx. dias</label>
+                    <input inputMode="numeric" value={cfg.maxDias} onChange={(e) => setCfg({ ...cfg, maxDias: e.target.value })}
+                      className="w-full px-3 py-2.5 mt-1 text-[14px] font-bold text-center" />
+                  </div>
+                </div>
+              </Section>
+
+              <Section title="🛒 Links de checkout (Cakto)">
+                <label className="text-[11.5px] font-bold text-sub">URL da Fase 2</label>
+                <input value={cfg.checkoutFase2} onChange={(e) => setCfg({ ...cfg, checkoutFase2: e.target.value })}
+                  placeholder="https://pay.cakto.com.br/..." className="w-full px-3 py-2.5 mt-1 text-[13px] font-semibold" />
+                <label className="text-[11.5px] font-bold text-sub block mt-3">URL da Fase 3</label>
+                <input value={cfg.checkoutFase3} onChange={(e) => setCfg({ ...cfg, checkoutFase3: e.target.value })}
+                  placeholder="https://pay.cakto.com.br/..." className="w-full px-3 py-2.5 mt-1 text-[13px] font-semibold" />
+              </Section>
+
+              <Section title="💬 Suporte">
+                <label className="text-[11.5px] font-bold text-sub">Link do WhatsApp</label>
+                <input value={cfg.whatsapp} onChange={(e) => setCfg({ ...cfg, whatsapp: e.target.value })}
+                  placeholder="https://wa.me/55..." className="w-full px-3 py-2.5 mt-1 text-[13px] font-semibold" />
+              </Section>
+
+              <button onClick={salvarConfig} className="cta-gold w-full py-3.5 mt-4 text-[15px]">
+                Salvar configurações
+              </button>
+              <p className="text-sub text-[11.5px] font-semibold mt-2 text-center">
+                Vale para todas as usuárias na próxima vez que abrirem o app — sem precisar de deploy.
+              </p>
+            </>
+          )
         )}
 
         {tab === "acesso" && (
