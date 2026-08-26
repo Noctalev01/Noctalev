@@ -1,5 +1,5 @@
 // NoctaLev service worker — cache p/ leitura offline + notificações
-const CACHE = "noctalev-v2";
+const CACHE = "noctalev-v3";
 const ASSETS = ["/", "/receita", "/progresso", "/bonus", "/manifest.json", "/icon-192.png", "/icon-512.png"];
 
 self.addEventListener("install", (e) => {
