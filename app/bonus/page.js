@@ -63,8 +63,8 @@ export default function Bonus() {
 
   return (
     <PageShell>
-      <Logo />
-      <h1 className="text-[24px] font-extrabold tracking-tight mt-[18px]">Seus Bônus 🎁</h1>
+      <Logo size="text-[19px]" />
+      <h1 className="text-[25px] font-extrabold tracking-tight mt-6">Seus bônus</h1>
       <div className="text-[14px] text-sub font-semibold mt-1">Conteúdos extras liberados ao longo do protocolo</div>
 
       <div className="mt-5 space-y-4">

@@ -32,13 +32,15 @@ export default function Receita() {
 
   return (
     <PageShell>
-      <Logo />
-      <h1 className="text-[24px] font-extrabold tracking-tight mt-[18px]">Sua Receita 🌿</h1>
-      <div className="text-[14px] text-sub font-semibold mt-1">Fase 1 · {FASE1.nome}</div>
+      <Logo size="text-[19px]" />
+      <div className="mt-6">
+        <div className="eyebrow">Fase 1</div>
+        <h1 className="text-[25px] font-extrabold tracking-tight mt-1">{FASE1.nome}</h1>
+      </div>
 
       {ajustes.length > 0 && (
         <div className="card mt-5 p-4 border-lilac/40">
-          <div className="text-[13.5px] font-extrabold text-lilac">✨ Receita ajustada para o seu perfil</div>
+          <div className="text-[13.5px] font-extrabold text-lilac">Receita ajustada para o seu perfil</div>
           <div className="mt-2 space-y-2">
             {ajustes.map((a, i) => (
               <div key={i} className="text-[13px] text-sub2 font-semibold leading-relaxed">{a.emoji} {a.texto}</div>
@@ -50,21 +52,21 @@ export default function Receita() {
       {/* status preparo */}
       {preparou ? (
         <div className="card mt-5 p-4 flex items-center gap-3" style={{ borderColor: "rgba(126,232,178,.35)" }}>
-          <span className="text-[26px]">🧪</span>
+          <span className="text-[22px]">🧪</span>
           <div>
-            <div className="text-[14.5px] font-extrabold text-green">Gotas preparadas!</div>
-            <div className="text-[12.5px] text-sub font-semibold">Conquista Alquimista desbloqueada 🏆</div>
+            <div className="text-[14.5px] font-extrabold text-green">Gotas preparadas</div>
+            <div className="text-[12.5px] text-sub font-semibold">Conquista Alquimista desbloqueada</div>
           </div>
         </div>
       ) : (
         <Link href="/preparo" className="cta-gold block text-center py-4 mt-5 text-[15.5px]">
-          🧪 Iniciar Modo Preparo Guiado
+          Iniciar preparo guiado
         </Link>
       )}
 
       {/* ingredientes */}
       <div className="card mt-5 p-5">
-        <div className="text-[15px] font-extrabold">🛒 Lista de ingredientes</div>
+        <div className="eyebrow">Lista de ingredientes</div>
         <div className="text-[12.5px] text-sub font-semibold mt-1">Custo estimado: {FASE1.custo}. Marque o que já comprou:</div>
         <div className="mt-4 space-y-3">
           {FASE1.ingredientes.map((ing) => (
@@ -82,17 +84,17 @@ export default function Receita() {
 
       {/* como usar */}
       <div className="card mt-5 p-5">
-        <div className="text-[15px] font-extrabold">💧 Como usar</div>
+        <div className="eyebrow">Como usar</div>
         <p className="text-[14px] font-bold text-gold mt-2 leading-relaxed">{FASE1.uso}</p>
-        <p className="text-[13px] text-sub2 font-semibold mt-3 leading-relaxed">🌙 {FASE1.ritual}</p>
-        <p className="text-[13px] text-sub2 font-semibold mt-3 leading-relaxed">😋 {FASE1.sabor}</p>
+        <p className="text-[13px] text-sub2 font-semibold mt-3 leading-relaxed">{FASE1.ritual}</p>
+        <p className="text-[13px] text-sub2 font-semibold mt-3 leading-relaxed">{FASE1.sabor}</p>
       </div>
 
       {/* fases bloqueadas */}
       <div className="card mt-5 p-5 opacity-95">
         <div className="flex justify-between items-center">
-          <div className="text-[15px] font-extrabold">{FASE2_TEASER.emoji} Fase 2 — {FASE2_TEASER.nome}</div>
-          <span className="text-[17px]">🔒</span>
+          <div className="text-[15px] font-extrabold">Fase 2 — {FASE2_TEASER.nome}</div>
+          <span className="text-[14px] opacity-70">🔒</span>
         </div>
         <p className="text-[13px] text-sub2 font-semibold mt-2 leading-relaxed">{FASE2_TEASER.teaser}</p>
         {preparou && (
@@ -107,8 +109,8 @@ export default function Receita() {
 
       <div className="card mt-4 p-5 opacity-75">
         <div className="flex justify-between items-center">
-          <div className="text-[15px] font-extrabold">{FASE3_TEASER.emoji} Fase 3 — {FASE3_TEASER.nome}</div>
-          <span className="text-[17px]">🔒</span>
+          <div className="text-[15px] font-extrabold">Fase 3 — {FASE3_TEASER.nome}</div>
+          <span className="text-[14px] opacity-70">🔒</span>
         </div>
         <p className="text-[13px] text-sub2 font-semibold mt-2 leading-relaxed">{FASE3_TEASER.teaser}</p>
       </div>

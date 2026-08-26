@@ -116,8 +116,8 @@ export default function Progresso() {
 
   return (
     <PageShell>
-      <Logo />
-      <h1 className="text-[24px] font-extrabold tracking-tight mt-[18px]">Seu Progresso 📈</h1>
+      <Logo size="text-[19px]" />
+      <h1 className="text-[25px] font-extrabold tracking-tight mt-6">Seu progresso</h1>
 
       {fraseStatus && (
         <div className="card mt-5 p-4 border-green/30 text-[13.5px] text-sub2 font-semibold leading-relaxed">
@@ -127,7 +127,7 @@ export default function Progresso() {
 
       {/* FOTO DE ANTES */}
       <div className="card mt-5 p-5">
-        <div className="text-[15px] font-extrabold">📸 Sua foto de "antes"</div>
+        <div className="eyebrow">Sua foto de "antes"</div>
         {s.fotoAntes ? (
           <div className="mt-4 flex items-center gap-4">
             <img src={s.fotoAntes} alt="Foto de antes"
@@ -160,7 +160,7 @@ export default function Progresso() {
 
       <div className="card mt-5 p-5">
         <div className="flex justify-between items-center">
-          <div className="text-[15px] font-extrabold">⚖️ Peso</div>
+          <div className="eyebrow">Peso</div>
           <div className="flex gap-1.5">
             {[7, 14, 30].map((p) => (
               <button key={p} onClick={() => setPeriodo(p)}
@@ -174,23 +174,23 @@ export default function Progresso() {
       </div>
 
       <div className="card mt-4 p-5">
-        <div className="text-[15px] font-extrabold">😴 Qualidade do sono (últimos 14 dias)</div>
+        <div className="eyebrow">Sono — últimos 14 dias</div>
         <div className="mt-4"><HeatmapSono checkins={s.checkins} /></div>
       </div>
 
       <div className="grid grid-cols-2 gap-3 mt-4">
         <div className="card p-4 text-center">
-          <div className="text-[24px] font-black">🔥 {streak}</div>
+          <div className="text-[24px] font-black text-gold tracking-tight">{streak}</div>
           <div className="text-[11.5px] text-sub font-bold mt-1">streak atual</div>
         </div>
         <div className="card p-4 text-center">
-          <div className="text-[24px] font-black">🏅 {recorde}</div>
+          <div className="text-[24px] font-black text-lilac tracking-tight">{recorde}</div>
           <div className="text-[11.5px] text-sub font-bold mt-1">recorde de noites</div>
         </div>
       </div>
 
       <div className="card mt-4 p-5">
-        <div className="text-[15px] font-extrabold">🏆 Conquistas</div>
+        <div className="eyebrow">Conquistas</div>
         <div className="grid grid-cols-2 gap-3 mt-4">
           {Object.entries(CONQUISTAS).map(([tipo, c]) => {
             const tem = !!s.conquistas[tipo];

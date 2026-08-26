@@ -18,10 +18,20 @@ export function Stars() {
   );
 }
 
+// Lua crescente vetorial (mesma identidade da capa)
+export function Lua({ size = 20, color = "#a5b4fc" }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M20.2 14.2A8.6 8.6 0 0 1 9.8 3.8a.55.55 0 0 0-.72-.66 9.4 9.4 0 1 0 11.78 11.78.55.55 0 0 0-.66-.72Z" fill={color} />
+      <path d="M17.4 5.2l.5 1.4 1.4.5-1.4.5-.5 1.4-.5-1.4-1.4-.5 1.4-.5.5-1.4Z" fill="#dbe3ff" />
+    </svg>
+  );
+}
+
 export function Logo({ size = "text-[22px]" }) {
   return (
     <div className={`flex items-center justify-center gap-2 font-black tracking-tight ${size}`}>
-      <span>🌙</span>
+      <Lua size={22} />
       <span>
         Nocta<span className="text-lilac">Lev</span>
       </span>
@@ -29,11 +39,24 @@ export function Logo({ size = "text-[22px]" }) {
   );
 }
 
+// Ícones de navegação em traço fino (estilo iOS/Material — sem emojis)
+function IconTab({ name, on }) {
+  const c = on ? "#fbd38d" : "#6a72a0";
+  const p = { fill: "none", stroke: c, strokeWidth: 1.9, strokeLinecap: "round", strokeLinejoin: "round" };
+  if (name === "inicio")
+    return (<svg width="23" height="23" viewBox="0 0 24 24"><path {...p} d="M3.5 10.5 12 3.5l8.5 7v9a1.5 1.5 0 0 1-1.5 1.5h-4.5v-6h-5v6H5a1.5 1.5 0 0 1-1.5-1.5v-9Z" /></svg>);
+  if (name === "receita")
+    return (<svg width="23" height="23" viewBox="0 0 24 24"><path {...p} d="M12 21c-5 0-8-3.4-8-8 0-4.2 3.2-8.4 8-9.5 4.8 1.1 8 5.3 8 9.5 0 4.6-3 8-8 8Z" /><path {...p} d="M12 21V9.5M12 13l3.2-2.6M12 15.5 8.8 13" /></svg>);
+  if (name === "progresso")
+    return (<svg width="23" height="23" viewBox="0 0 24 24"><path {...p} d="M4 20V4M4 20h16" /><path {...p} d="M7.5 15.5l4-4.5 3 2.5 5-6" /></svg>);
+  return (<svg width="23" height="23" viewBox="0 0 24 24"><rect {...p} x="4" y="8.5" width="16" height="11" rx="2" /><path {...p} d="M4 12.5h16M12 8.5v11M12 8.5c-3 0-4.6-1.4-4.6-3A1.9 1.9 0 0 1 9.3 3.6c2 0 2.7 2.6 2.7 4.9 0-2.3.7-4.9 2.7-4.9a1.9 1.9 0 0 1 1.9 1.9c0 1.6-1.6 3-4.6 3Z" /></svg>);
+}
+
 const TABS = [
-  { href: "/", icon: "🏠", label: "Início" },
-  { href: "/receita", icon: "🌿", label: "Receita" },
-  { href: "/progresso", icon: "📈", label: "Progresso" },
-  { href: "/bonus", icon: "🎁", label: "Bônus" },
+  { href: "/", icon: "inicio", label: "Início" },
+  { href: "/receita", icon: "receita", label: "Receita" },
+  { href: "/progresso", icon: "progresso", label: "Progresso" },
+  { href: "/bonus", icon: "bonus", label: "Bônus" },
 ];
 
 export function TabBar() {
@@ -46,11 +69,11 @@ export function TabBar() {
           <Link
             key={t.href}
             href={t.href}
-            className={`flex-1 flex flex-col items-center justify-center gap-[3px] text-[11px] font-bold ${
+            className={`flex-1 flex flex-col items-center justify-center gap-[4px] text-[10.5px] font-bold ${
               on ? "text-gold" : "text-taboff"
             }`}
           >
-            <span className="text-[20px]">{t.icon}</span>
+            <IconTab name={t.icon} on={on} />
             {t.label}
           </Link>
         );
