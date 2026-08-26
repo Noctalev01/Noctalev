@@ -59,8 +59,8 @@ export default function Config() {
 
   return (
     <PageShell>
-      <Logo />
-      <h1 className="text-[24px] font-extrabold tracking-tight mt-[18px]">Configurações ⚙️</h1>
+      <Logo size="text-[19px]" />
+      <h1 className="text-[25px] font-extrabold tracking-tight mt-6">Ajustes</h1>
 
       <div className="card mt-5 p-5 space-y-4">
         <div>

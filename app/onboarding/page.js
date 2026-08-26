@@ -101,35 +101,43 @@ export default function Onboarding() {
     router.replace("/");
   }
 
+  // Tela de entrada com a capa oficial (imagem já contém a marca)
+  if (etapa === "login") {
+    return (
+      <div className="relative max-w-md mx-auto min-h-dvh overflow-x-hidden" style={{ background: "#171d3d" }}>
+        <div className="hero-capa">
+          <img src="/capa.jpg" alt="NoctaLev — Seu sono. Seu melhor dia." />
+        </div>
+        <div className="relative z-10 px-6 pb-12 -mt-2">
+          <h1 className="text-[23px] font-extrabold tracking-tight">Bem-vinda ao seu protocolo</h1>
+          <p className="text-sub2 text-[14px] font-medium mt-1.5 leading-relaxed">
+            Entre com o email usado na sua compra.<br />Sem senha e sem código — acesso imediato.
+          </p>
+          <div className="mt-6">
+            <input type="email" inputMode="email" autoComplete="email" placeholder="Seu email da compra" value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter" && email.includes("@") && !enviando) entrar(); }}
+              className="w-full px-4 py-4 text-[16px] font-semibold" />
+          </div>
+          {erro && <div className="card p-3.5 mt-4 text-[13px] font-bold text-[#e57373] leading-relaxed">{erro}</div>}
+          <button disabled={!email.includes("@") || enviando}
+            onClick={entrar}
+            className="cta-gold w-full py-4 mt-5 text-[16px] disabled:opacity-40">
+            {enviando ? "Entrando..." : "Entrar"}
+          </button>
+          <p className="text-sub text-[12px] font-semibold text-center mt-5">
+            Acesso liberado automaticamente após a compra.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="app-bg relative max-w-md mx-auto min-h-dvh overflow-x-hidden">
       <Stars />
       <div className="relative z-10 px-6 pt-12 pb-10 flex flex-col min-h-dvh">
         <Logo size="text-[26px]" />
-
-        {etapa === "login" && (
-          <div className="flex-1 flex flex-col justify-center">
-            <h1 className="text-[26px] font-black tracking-tight text-center">Bem-vinda! 💛</h1>
-            <p className="text-sub2 text-[14.5px] font-semibold text-center mt-2 leading-relaxed">
-              Digite o <b className="text-gold">email usado na sua compra</b><br />e entre na hora — sem senha, sem código!
-            </p>
-            <div className="mt-8">
-              <input type="email" inputMode="email" autoComplete="email" placeholder="Seu email da compra" value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter" && email.includes("@") && !enviando) entrar(); }}
-                className="w-full px-4 py-4 text-[16px] font-semibold" />
-            </div>
-            {erro && <div className="card p-3 mt-4 text-[13px] font-bold text-[#e57373] leading-relaxed">{erro}</div>}
-            <button disabled={!email.includes("@") || enviando}
-              onClick={entrar}
-              className="cta-gold w-full py-4 mt-6 text-[16px] disabled:opacity-40">
-              {enviando ? "Entrando..." : "Entrar ✨"}
-            </button>
-            <p className="text-sub text-[12px] font-semibold text-center mt-4">
-              Seu acesso é liberado automaticamente após a compra. 🛒✨
-            </p>
-          </div>
-        )}
 
         {etapa === "slides" && (
           <div className="flex-1 flex flex-col justify-center text-center">
