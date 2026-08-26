@@ -2,7 +2,9 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { PageShell, Logo } from "../../components/ui";
-import { load, pesosOrdenados, calcStreak, CONQUISTAS, SONO_OPTS, hojeSP } from "../../lib/store";
+import { load, save, salvarFotoAntes, pesosOrdenados, calcStreak, CONQUISTAS, SONO_OPTS, hojeSP, pesoPerdido } from "../../lib/store";
+import { comprimirFoto } from "../../lib/foto";
+import { syncNow } from "../../lib/sync";
 
 const LBL = { 1: "Péssimo", 2: "Ruim", 3: "Regular", 4: "Bom", 5: "Excelente" };
 
@@ -53,6 +55,7 @@ export default function Progresso() {
   const router = useRouter();
   const [s, setS] = useState(null);
   const [periodo, setPeriodo] = useState(30);
+  const [fotoErro, setFotoErro] = useState("");
 
   useEffect(() => {
     const st = load();
@@ -61,6 +64,21 @@ export default function Progresso() {
   }, [router]);
 
   if (!s) return <div className="app-bg min-h-dvh" />;
+
+  async function escolherFoto(e) {
+    setFotoErro("");
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const dataURL = await comprimirFoto(file);
+      const st = salvarFotoAntes(load(), dataURL);
+      setS({ ...st });
+      syncNow();
+    } catch {
+      setFotoErro("Não foi possível carregar a foto. Tente outra imagem.");
+    }
+    e.target.value = "";
+  }
 
   const todos = pesosOrdenados(s);
   const corte = new Date(); corte.setDate(corte.getDate() - periodo);
@@ -106,6 +124,39 @@ export default function Progresso() {
           {fraseStatus}
         </div>
       )}
+
+      {/* FOTO DE ANTES */}
+      <div className="card mt-5 p-5">
+        <div className="text-[15px] font-extrabold">📸 Sua foto de "antes"</div>
+        {s.fotoAntes ? (
+          <div className="mt-4 flex items-center gap-4">
+            <img src={s.fotoAntes} alt="Foto de antes"
+              className="w-[110px] h-[110px] object-cover rounded-[18px] flex-none"
+              style={{ border: "2px solid rgba(251,211,141,.45)" }} />
+            <div className="flex-1">
+              <div className="text-[13px] text-sub2 font-semibold leading-relaxed">
+                Registrada em {s.fotoAntesEm ? new Date(s.fotoAntesEm).toLocaleDateString("pt-BR") : "—"}.
+                {pesoPerdido(s) > 0 && (
+                  <> Você já eliminou <b className="text-green">−{pesoPerdido(s).toFixed(1).replace(".", ",")} kg</b> desde então! 🎉</>
+                )}
+              </div>
+              <label className="inline-block mt-2.5 text-[12.5px] font-bold text-lilac cursor-pointer">
+                Trocar foto
+                <input type="file" accept="image/*" className="hidden" onChange={escolherFoto} />
+              </label>
+            </div>
+          </div>
+        ) : (
+          <label className="mt-4 p-5 flex flex-col items-center gap-1.5 cursor-pointer rounded-2xl active:opacity-80"
+            style={{ border: "1.5px dashed rgba(251,211,141,.4)", background: "rgba(251,211,141,.04)" }}>
+            <span className="text-[28px]">🤳</span>
+            <span className="text-[13.5px] font-extrabold text-gold">Adicionar minha foto de antes</span>
+            <span className="text-[11.5px] text-sub font-semibold text-center">Privada — só você vê. Seu eu do futuro agradece!</span>
+            <input type="file" accept="image/*" className="hidden" onChange={escolherFoto} />
+          </label>
+        )}
+        {fotoErro && <div className="text-[12.5px] font-bold text-[#e57373] mt-3">{fotoErro}</div>}
+      </div>
 
       <div className="card mt-5 p-5">
         <div className="flex justify-between items-center">

@@ -2,9 +2,10 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Stars, Logo } from "../../components/ui";
-import { load, salvarPerfil } from "../../lib/store";
+import { load, salvarPerfil, salvarFotoAntes } from "../../lib/store";
 import { supabase } from "../../lib/supabase";
 import { pullFromCloud, pushProfile } from "../../lib/sync";
+import { comprimirFoto } from "../../lib/foto";
 
 const SLIDES = [
   { emoji: "🌙", titulo: "Seu protocolo começa hoje", texto: "O NoctaLev usa o poder do seu sono para destravar o emagrecimento. Simples, natural e no seu ritmo." },
@@ -14,13 +15,15 @@ const SLIDES = [
 
 export default function Onboarding() {
   const router = useRouter();
-  const [etapa, setEtapa] = useState("login"); // login | slides | quiz | compromisso
+  const [etapa, setEtapa] = useState("login"); // login | slides | quiz | foto | compromisso
   const [slide, setSlide] = useState(0);
   const [q, setQ] = useState(0);
   const [email, setEmail] = useState("");
   const [enviando, setEnviando] = useState(false);
   const [erro, setErro] = useState("");
   const [userId, setUserId] = useState(null);
+  const [foto, setFoto] = useState(null); // dataURL da foto "antes"
+  const [fotoErro, setFotoErro] = useState("");
   const [f, setF] = useState({ nome: "", pesoInicial: "", pesoMeta: "", dificuldade: null, refluxo: null, cafeina: null });
 
   const set = (k, v) => setF((p) => ({ ...p, [k]: v }));
@@ -69,6 +72,19 @@ export default function Onboarding() {
     setEnviando(false);
   }
 
+  async function escolherFoto(e) {
+    setFotoErro("");
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const dataURL = await comprimirFoto(file);
+      setFoto(dataURL);
+    } catch {
+      setFotoErro("Não foi possível carregar a foto. Tente outra imagem.");
+    }
+    e.target.value = ""; // permite escolher a mesma foto de novo
+  }
+
   async function concluir() {
     const s = load();
     salvarPerfil(s, {
@@ -80,8 +96,9 @@ export default function Onboarding() {
       refluxo: f.refluxo === true,
       cafeina: f.cafeina === true,
     });
+    if (foto) salvarFotoAntes(load(), foto);
     if (userId) await pushProfile(userId); // salva na nuvem
-    router.replace("/preparo");
+    router.replace("/");
   }
 
   return (
@@ -218,9 +235,56 @@ export default function Onboarding() {
                     ))}
                   </div>
                 </div>
-                <button disabled={f.refluxo === null || f.cafeina === null} onClick={() => setEtapa("compromisso")}
-                  className="cta-gold w-full py-4 mt-8 text-[16px] disabled:opacity-40">Finalizar</button>
+                <button disabled={f.refluxo === null || f.cafeina === null} onClick={() => setEtapa("foto")}
+                  className="cta-gold w-full py-4 mt-8 text-[16px] disabled:opacity-40">Continuar</button>
               </>
+            )}
+          </div>
+        )}
+
+        {etapa === "foto" && (
+          <div className="flex-1 flex flex-col justify-center">
+            <div className="text-[56px] text-center anim-float">📸</div>
+            <h1 className="text-[24px] font-black tracking-tight text-center mt-3">Sua foto de "ANTES"</h1>
+            <p className="text-sub2 text-[14px] font-semibold text-center mt-2 leading-relaxed px-2">
+              Tire uma foto sua <b className="text-gold">agora, antes de começar</b>.
+              Daqui a algumas semanas, você vai amar ter esse registro para comparar sua evolução! 💛
+            </p>
+
+            {foto ? (
+              <div className="mt-6 flex flex-col items-center">
+                <img src={foto} alt="Sua foto de antes"
+                  className="w-[180px] h-[180px] object-cover rounded-[22px]"
+                  style={{ border: "2px solid rgba(251,211,141,.5)" }} />
+                <label className="mt-3 text-[13px] font-bold text-lilac cursor-pointer">
+                  Trocar foto
+                  <input type="file" accept="image/*" capture="user" className="hidden" onChange={escolherFoto} />
+                </label>
+              </div>
+            ) : (
+              <label className="card mt-6 p-6 flex flex-col items-center gap-2 cursor-pointer active:opacity-80"
+                style={{ borderStyle: "dashed", borderColor: "rgba(251,211,141,.4)" }}>
+                <span className="text-[34px]">🤳</span>
+                <span className="text-[14.5px] font-extrabold text-gold">Tirar ou escolher foto</span>
+                <span className="text-[12px] text-sub font-semibold">Fica só com você — privada e segura</span>
+                <input type="file" accept="image/*" capture="user" className="hidden" onChange={escolherFoto} />
+              </label>
+            )}
+
+            {fotoErro && <div className="card p-3 mt-4 text-[13px] font-bold text-[#e57373]">{fotoErro}</div>}
+
+            <div className="card p-3.5 mt-5 text-[12px] text-sub font-semibold leading-relaxed">
+              🔒 Sua foto é <b className="text-sub2">privada</b>: só aparece para você, no seu progresso.
+              Dica: corpo inteiro, roupa justa ou de treino, mesma pose que você repetirá no "depois".
+            </div>
+
+            <button onClick={() => setEtapa("compromisso")} className="cta-gold w-full py-4 mt-5 text-[16px]">
+              {foto ? "Continuar ✨" : "Continuar"}
+            </button>
+            {!foto && (
+              <button onClick={() => setEtapa("compromisso")} className="mt-3 text-[13px] font-bold text-sub text-center w-full">
+                Prefiro não colocar agora (dá para adicionar depois)
+              </button>
             )}
           </div>
         )}
@@ -241,7 +305,7 @@ export default function Onboarding() {
               Resultados variam de pessoa para pessoa.
             </div>
             <button onClick={concluir} className="cta-gold w-full py-4 mt-6 text-[16px]">
-              Ver minha receita 🌿
+              Começar minha jornada 🌙
             </button>
           </div>
         )}
