@@ -12,6 +12,7 @@ import { supabase } from "../lib/supabase";
 import { pullFromCloud, syncNow } from "../lib/sync";
 import { agendarLembretes, statusPermissao, pedirPermissao, notificarTeste } from "../lib/notificacoes";
 import { rankingDoDia } from "../lib/turma";
+import { Icone, IconBox } from "../components/icones";
 import InstalarApp from "../components/InstalarApp";
 
 function fmtKg(n) {
@@ -129,12 +130,12 @@ export default function Home() {
             <div className="flex items-center gap-[14px]">
               <div className="w-[42px] h-[42px] flex-none rounded-[13px] flex items-center justify-center text-[20px]"
                 style={{ background: "rgba(251,211,141,.1)", border: "1px solid rgba(251,211,141,.35)" }}>
-                {rk.posicao <= 3 ? med[rk.posicao - 1] : "👭"}
+                {rk.posicao <= 3 ? med[rk.posicao - 1] : <Icone nome="trofeu" cor="#fbd38d" size={21} />}
               </div>
               <div className="flex-1">
                 <div className="text-[14.5px] font-extrabold">Sua turma · você está em {rk.posicao}º</div>
                 <div className="text-[12px] text-sub font-semibold mt-[2px]">
-                  {rk.posicao === 1 ? "Liderando! Veja como a turma está 🔥" : `Entre ${rk.total} pessoas — veja o ranking do dia ${rk.dia}`}
+                  {rk.posicao === 1 ? "Liderando! Veja como a turma está" : `Entre ${rk.total} pessoas — veja o ranking do dia ${rk.dia}`}
                 </div>
               </div>
               <span className="text-sub text-[16px]">›</span>
@@ -146,8 +147,7 @@ export default function Home() {
       {/* Sua jornada — o que esperar */}
       <Link href="/jornada" className="card block mt-4 p-[16px]">
         <div className="flex items-center gap-[14px]">
-          <div className="w-[42px] h-[42px] flex-none rounded-[13px] flex items-center justify-center text-[19px]"
-            style={{ background: "rgba(165,180,252,.1)", border: "1px solid rgba(165,180,252,.3)" }}>🗺️</div>
+          <IconBox nome="mapa" cor="#a5b4fc" />
           <div className="flex-1">
             <div className="text-[14.5px] font-extrabold">Sua jornada — o que esperar</div>
             <div className="text-[12px] text-sub font-semibold mt-[2px]">
@@ -226,8 +226,7 @@ export default function Home() {
         ) : (
           <Link href="/ritual" className="card block mt-4 p-[18px]">
             <div className="flex items-center gap-[14px]">
-              <div className="w-[42px] h-[42px] flex-none rounded-[13px] flex items-center justify-center text-[19px]"
-                style={{ background: "rgba(251,211,141,.10)", border: "1px solid rgba(251,211,141,.35)" }}>🍵</div>
+              <IconBox nome="cha" cor="#fbd38d" />
               <div className="flex-1">
                 <div className="text-[15px] font-extrabold">Ritual noturno de hoje</div>
                 <div className="text-[12.5px] text-sub font-semibold mt-[3px]">Seu chá + luz baixa, 30–60 min antes de dormir</div>
@@ -242,8 +241,7 @@ export default function Home() {
       {preparou && !checkinHoje && (
         <Link href="/checkin" className="card block mt-4 p-[18px]">
           <div className="flex items-center gap-[14px]">
-            <div className="w-[42px] h-[42px] flex-none rounded-[13px] flex items-center justify-center text-[19px]"
-              style={{ background: "rgba(165,180,252,.10)", border: "1px solid rgba(165,180,252,.35)" }}>☀️</div>
+            <IconBox nome="sol" cor="#a5b4fc" />
             <div className="flex-1">
               <div className="text-[15px] font-extrabold">Como foi sua noite?</div>
               <div className="text-[12.5px] text-sub font-semibold mt-[3px]">Check-in do dia · +10 pontos</div>
@@ -295,27 +293,42 @@ export default function Home() {
               ))}
             </div>
             <div className="text-[11px] text-sub font-semibold mt-3 leading-relaxed">
-              💡 Sono profundo é o motor da queima de gordura — os aceleradores turbinam esse motor. Toque para marcar ✓
+              Sono profundo é o motor da queima de gordura — os aceleradores turbinam esse motor. Toque para marcar.
             </div>
           </div>
         );
       })()}
 
-      {/* FASE 2 */}
+      {/* FASE 2 — evolução do corpo (nunca menciona datas) */}
       {preparou && (
-        <div className="card mt-4 p-[20px_18px]">
-          <div className="flex justify-between items-center">
-            <div>
-              <div className="eyebrow">Próxima etapa</div>
-              <div className="text-[15.5px] font-extrabold mt-1">Receita da Fase 2</div>
+        <div className="card mt-4 overflow-hidden" style={{ padding: 0 }}>
+          <div className="relative h-[120px]">
+            <img src="/img/fase2-shot.jpg" alt="" className="w-full h-full object-cover"
+              style={{ filter: prog.pct >= 100 ? "none" : "saturate(.75) brightness(.8)" }} />
+            <div className="absolute inset-0" style={{ background: "linear-gradient(180deg, rgba(16,20,44,.15), rgba(16,20,44,.92))" }} />
+            <div className="absolute bottom-3 left-4 right-4 flex items-end justify-between">
+              <div>
+                <div className="eyebrow">Próxima etapa</div>
+                <div className="text-[16px] font-extrabold mt-0.5">Fase 2 · Shot Termo-Metabólico</div>
+              </div>
+              <Icone nome="cadeado" cor="#fbd38d" size={18} />
             </div>
-            <div className="text-[15px] opacity-70">🔒</div>
           </div>
-          <div className="bar-track mt-3.5">
-            <div className="bar-fill" style={{ width: `${prog.pct}%` }} />
-          </div>
-          <div className="mt-[9px] text-[13px] font-bold text-gold">
-            {prog.pct}% concluído — {prog.pct >= 90 ? (<>falta só <b className="text-white">{100 - prog.pct}%</b> para liberar</>) : "seu corpo está se adaptando à Fase 1"}
+          <div className="p-[16px_18px_18px]">
+            <div className="flex justify-between items-center text-[11px] font-bold">
+              <span className="text-sub">Evolução do seu corpo</span>
+              <span className="text-gold">{prog.pct}%</span>
+            </div>
+            <div className="bar-track mt-2">
+              <div className="bar-fill" style={{ width: `${prog.pct}%` }} />
+            </div>
+            <div className="mt-[9px] text-[12.5px] font-semibold text-sub2 leading-relaxed">
+              {prog.pct >= 90
+                ? <>Seu corpo está quase pronto — <b className="text-gold">continue o ritual e os check-ins</b> para liberar.</>
+                : prog.pct >= 60
+                ? <>Boa evolução! Cada ritual e check-in <b className="text-txt">acelera sua liberação</b>.</>
+                : <>A Fase 2 é liberada quando <b className="text-txt">seu corpo mostra que está pronto</b>. Ritual + check-in todos os dias fazem essa barra subir.</>}
+            </div>
           </div>
         </div>
       )}
@@ -324,8 +337,7 @@ export default function Home() {
       {preparou && notif === "default" && (
         <button onClick={ativarNotif} className="card block w-full text-left mt-4 p-[16px]">
           <div className="flex items-center gap-[14px]">
-            <div className="w-[42px] h-[42px] flex-none rounded-[13px] flex items-center justify-center text-[19px]"
-              style={{ background: "rgba(251,211,141,.10)", border: "1px solid rgba(251,211,141,.35)" }}>🔔</div>
+            <IconBox nome="sino" cor="#fbd38d" />
             <div className="flex-1">
               <div className="text-[14.5px] font-extrabold">Ativar lembrete do ritual</div>
               <div className="text-[12px] text-sub font-semibold mt-[3px]">Um aviso discreto na hora certa, todos os dias</div>
@@ -339,8 +351,7 @@ export default function Home() {
       {!s.fotoAntes && (
         <Link href="/progresso" className="card block mt-4 p-[16px]">
           <div className="flex items-center gap-[14px]">
-            <div className="w-[42px] h-[42px] flex-none rounded-[13px] flex items-center justify-center text-[19px]"
-              style={{ background: "rgba(165,180,252,.10)", border: "1px solid rgba(165,180,252,.35)" }}>📷</div>
+            <IconBox nome="camera" cor="#a5b4fc" />
             <div className="flex-1">
               <div className="text-[14.5px] font-extrabold">Adicione sua foto de "antes"</div>
               <div className="text-[12px] text-sub font-semibold mt-[3px]">Para comparar sua evolução mais adiante</div>

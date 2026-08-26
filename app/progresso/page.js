@@ -12,7 +12,7 @@ function GraficoPeso({ pesos, meta }) {
   if (pesos.length < 2)
     return (
       <div className="text-sub text-[13px] font-semibold text-center py-8 leading-relaxed">
-        Registre seu peso nos check-ins<br />para ver sua curva de evolução 📉
+        Registre seu peso nos check-ins<br />para ver sua curva de evolução
       </div>
     );
   const w = 330, h = 170, padX = 34, padY = 22;
@@ -142,7 +142,7 @@ export default function Progresso() {
     } else if (m2 >= m1) {
       fraseStatus = "Seu sono está estável — a constância do ritual é o que consolida o resultado. Continue! 🌙";
     } else {
-      fraseStatus = "Algumas noites mais difíceis são normais. Reforce o ritual: luz baixa + celular longe da cama. 💛";
+      fraseStatus = "Algumas noites mais difíceis são normais. Reforce o ritual: luz baixa + celular longe da cama.";
     }
   }
 
