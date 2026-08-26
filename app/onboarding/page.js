@@ -128,6 +128,21 @@ export default function Onboarding() {
           <p className="text-sub text-[12px] font-semibold text-center mt-5">
             Acesso liberado automaticamente após a compra.
           </p>
+
+          <a href={"https://wa.me/5554920011946?text=" + encodeURIComponent("Olá! Comprei o Protocolo Noturno NoctaLev e preciso de ajuda para entrar no app. 💛")}
+            target="_blank" rel="noreferrer"
+            className="card flex items-center gap-3 mt-6 p-4 active:opacity-80"
+            style={{ borderColor: "rgba(126,232,178,.35)" }}>
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" className="flex-none">
+              <path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5.1-1.3A10 10 0 1 0 12 2Z" fill="#25D366" />
+              <path d="M16.6 13.8c-.25-.13-1.47-.72-1.7-.8-.23-.09-.4-.13-.56.12-.17.25-.64.8-.79.97-.14.17-.29.19-.54.06a6.7 6.7 0 0 1-3.35-2.93c-.25-.43.25-.4.72-1.34.08-.17.04-.31-.02-.44-.06-.12-.56-1.35-.77-1.85-.2-.48-.4-.42-.56-.43h-.48c-.17 0-.44.06-.66.31-.23.25-.87.85-.87 2.07 0 1.22.9 2.4 1.02 2.57.12.17 1.76 2.68 4.25 3.76.6.26 1.06.41 1.42.52.6.19 1.14.16 1.57.1.48-.07 1.47-.6 1.68-1.18.2-.58.2-1.07.14-1.18-.06-.1-.22-.16-.47-.28Z" fill="#fff" />
+            </svg>
+            <div className="flex-1">
+              <div className="text-[14px] font-extrabold">Não está conseguindo entrar?</div>
+              <div className="text-[12px] text-sub2 font-semibold mt-0.5">Fale com a gente no WhatsApp — ajudamos você em cada passo 💛</div>
+            </div>
+            <span className="text-green text-[18px]">›</span>
+          </a>
         </div>
       </div>
     );

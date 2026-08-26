@@ -117,7 +117,13 @@ export default function InstalarApp() {
             <div className="card p-3 mt-5 text-[11.5px] text-sub font-semibold leading-relaxed" style={{ background: "rgba(255,255,255,.03)" }}>
               💡 Importante: no iPhone, isso só funciona pelo <b className="text-sub2">Safari</b>. Se você abriu por outro navegador ou pelo Instagram, copie o link e abra no Safari primeiro.
             </div>
-            <button onClick={dispensar} className="w-full mt-4 py-3 text-[13.5px] font-bold text-sub">Entendi, fechar</button>
+            <a href={"https://wa.me/5554920011946?text=" + encodeURIComponent("Olá! Estou tentando instalar o app NoctaLev no meu celular e preciso de ajuda. 💛")}
+              target="_blank" rel="noreferrer"
+              className="block text-center mt-4 py-3 rounded-[14px] text-[13.5px] font-extrabold text-green"
+              style={{ border: "1px solid rgba(126,232,178,.35)" }}>
+              💬 Não consegui — me ajudem no WhatsApp
+            </a>
+            <button onClick={dispensar} className="w-full mt-2 py-3 text-[13.5px] font-bold text-sub">Entendi, fechar</button>
           </div>
         </div>
       )}
