@@ -113,6 +113,24 @@ export default function Turma() {
         </div>
       </div>
 
+      {/* PRÊMIO DO 1º LUGAR */}
+      <div className="card mt-4 p-4"
+        style={{ borderColor: "rgba(251,211,141,.45)", background: "linear-gradient(160deg, rgba(251,211,141,.10), rgba(255,255,255,.03))" }}>
+        <div className="flex items-center gap-3">
+          <div className="w-[42px] h-[42px] flex-none rounded-[13px] flex items-center justify-center"
+            style={{ background: "rgba(251,211,141,.14)", border: "1px solid rgba(251,211,141,.45)" }}>
+            <Icone nome="trofeu" cor="#fbd38d" size={22} />
+          </div>
+          <div className="flex-1">
+            <div className="text-[13.5px] font-extrabold text-gold">Desafio da turma</div>
+            <div className="text-[12.5px] text-sub2 font-semibold mt-0.5 leading-relaxed">
+              Quem terminar em <b className="text-txt">1º lugar</b> ganha um vale de
+              <b className="text-gold"> R$ 500 na Renner</b> para transformar o guarda-roupa novo que o novo corpo merece.
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* novidades do dia */}
       <div className="card mt-4 p-4" style={{ background: "rgba(165,180,252,.05)" }}>
         <div className="eyebrow" style={{ color: "#a5b4fc" }}>Novidades da turma</div>
@@ -206,8 +224,8 @@ export default function Turma() {
         </Link>
       </div>
 
-      <p className="text-[10px] text-sub font-semibold text-center mt-5 leading-relaxed opacity-70 px-2">
-        Os participantes da turma são perfis ilustrativos que representam a jornada típica do protocolo.
+      <p className="text-[9.5px] text-sub font-semibold text-center mt-5 leading-relaxed opacity-50 px-2">
+        Turma composta por perfis de motivação baseados na jornada típica do protocolo.
         Sua posição no ranking é real, calculada pelos seus resultados.
       </p>
     </PageShell>
