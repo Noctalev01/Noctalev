@@ -95,7 +95,9 @@ export default function Receita() {
       )}
 
       {/* ingredientes */}
-      <div className="card mt-5 p-5">
+      <div className="card mt-5 overflow-hidden" style={{ padding: 0 }}>
+        <img src="/img/ingredientes.jpg" alt="Ingredientes naturais da mistura" className="w-full h-[110px] object-cover" />
+        <div className="p-5 pt-4">
         <div className="eyebrow">Lista de ingredientes</div>
         <div className="text-[12.5px] text-sub font-semibold mt-1">Custo estimado: {FASE1.custo}. Marque o que já comprou:</div>
         <div className="mt-4 space-y-1">
@@ -145,8 +147,9 @@ export default function Receita() {
             </button>
           </div>
           <div className="text-[11.5px] text-sub font-semibold text-center">
-            Dica: envie para você mesma ou para quem for comprar por você 💛
+            Dica: envie para você mesma ou para quem for comprar por você
           </div>
+        </div>
         </div>
       </div>
 

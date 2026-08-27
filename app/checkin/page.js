@@ -67,6 +67,9 @@ export default function Checkin() {
 
         {tela === 0 && (
           <div className="flex-1 flex flex-col justify-center">
+            <div className="rounded-2xl overflow-hidden mb-5" style={{ border: "1px solid rgba(165,180,252,.25)" }}>
+              <img src="/img/manha-checkin.jpg" alt="" className="w-full h-[120px] object-cover" />
+            </div>
             <h1 className="text-[25px] font-black tracking-tight text-center">Como foi seu sono<br />esta noite?</h1>
             <div className="space-y-3 mt-8">
               {SONO_OPTS.map((o) => (
