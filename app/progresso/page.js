@@ -10,6 +10,8 @@ import {
 import { comprimirFoto } from "../../lib/foto";
 import { syncNow } from "../../lib/sync";
 import CardCompartilhar from "../../components/CardCompartilhar";
+import CalendarioJornada from "../../components/CalendarioJornada";
+import RelatorioMedico from "../../components/RelatorioMedico";
 
 const LBL = { 1: "Péssimo", 2: "Ruim", 3: "Regular", 4: "Bom", 5: "Excelente" };
 
@@ -317,6 +319,9 @@ export default function Progresso() {
         <div className="mt-4"><HeatmapSono checkins={s.checkins} /></div>
       </div>
 
+      {/* 4.4 — Calendário da jornada */}
+      {preparou && <CalendarioJornada s={s} hoje={hojeSP()} />}
+
       <div className="grid grid-cols-2 gap-3 mt-4">
         <div className="card p-4 text-center">
           <div className="text-[24px] font-black text-gold tracking-tight">{streak}</div>
@@ -376,6 +381,9 @@ export default function Progresso() {
           />
         </div>
       )}
+
+      {/* 4.5 — Relatório para levar ao médico */}
+      <RelatorioMedico s={s} />
     </PageShell>
   );
 }

@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 // ===== 1.5 — vibração tátil (Android; iPhone ignora sem erro) =====
 export function vibrar(padrao = 18) {
@@ -111,10 +112,17 @@ const TABS = [
 ];
 
 // ===== 1.7 — TabBar com indicador deslizante + área segura do iPhone =====
+// FIX: renderizada via portal direto no <body>. Antes, ela ficava dentro do
+// contêiner da página que tem animação com transform — e transform no pai
+// quebra o position:fixed (o menu "descia" junto com a página). No body,
+// o menu fica SEMPRE travado na base da tela.
 export function TabBar() {
   const path = usePathname();
   const idx = TABS.findIndex((t) => t.href === path);
-  return (
+  const [montado, setMontado] = useState(false);
+  useEffect(() => setMontado(true), []);
+  if (!montado) return null;
+  return createPortal(
     <nav className="tabbar-safe fixed bottom-0 left-0 right-0 z-40 bg-[rgba(8,11,26,.92)] border-t border-[rgba(165,180,252,.14)] backdrop-blur-md max-w-md mx-auto">
       <div className="relative h-[78px] flex">
         {idx >= 0 && (
@@ -139,7 +147,8 @@ export function TabBar() {
           );
         })}
       </div>
-    </nav>
+    </nav>,
+    document.body
   );
 }
 
