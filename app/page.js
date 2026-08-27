@@ -6,8 +6,9 @@ import { PageShell, Logo, Ring, Sparkline, Splash, ContadorNumero, vibrar } from
 import {
   load, saudacao, diaProtocolo, scoreSono, pesoPerdido, pesosOrdenados,
   progressao, calcStreak, hojeSP, verificarDesbloqueio, fraseDoDia,
-  estadoImpulsos, concluirImpulso,
+  estadoImpulsos, concluirImpulso, verConquista, estadoPerdao, estadoMistura,
 } from "../lib/store";
+import ModalConquista from "../components/ModalConquista";
 import { supabase } from "../lib/supabase";
 import { pullFromCloud, syncNow } from "../lib/sync";
 import { agendarLembretes, statusPermissao, pedirPermissao, notificarTeste, ativarPush } from "../lib/notificacoes";
@@ -24,6 +25,7 @@ export default function Home() {
   const [s, setS] = useState(null);
   const [notif, setNotif] = useState("granted"); // esconde o card por padrão até saber
   const [impAberto, setImpAberto] = useState(null); // id do impulso com explicação aberta
+  const [conquistaNova, setConquistaNova] = useState(null); // 3.1 — modal de celebração
 
   useEffect(() => {
     async function init() {
@@ -44,6 +46,8 @@ export default function Home() {
       }
       setS(st);
       setNotif(statusPermissao());
+      // 3.1 — se há conquista nova não celebrada, abre a festa
+      if (st.conquistasNaoVistas?.length) setConquistaNova(st.conquistasNaoVistas[0]);
       agendarLembretes(); // lembrete local (app aberto)
       ativarPush(uid);    // push remoto — chega mesmo com o app fechado
     }
@@ -61,6 +65,13 @@ export default function Home() {
     }
   }
 
+  function fecharConquista() {
+    const st = verConquista(load());
+    setS({ ...st });
+    setConquistaNova(st.conquistasNaoVistas?.[0] || null);
+    syncNow();
+  }
+
   if (!s) return <Splash />;
 
   const nome = s.perfil.nome;
@@ -75,9 +86,12 @@ export default function Home() {
   const ritualHoje = s.rituais[hoje];
   const checkinHoje = s.checkins[hoje];
   const preparou = !!s.receitaPreparadaEm;
+  const mistura = estadoMistura(s);       // 4.1
+  const perdao = estadoPerdao(s);         // 3.2
 
   return (
     <PageShell>
+      {conquistaNova && <ModalConquista tipo={conquistaNova} onFechar={fecharConquista} />}
       <div className="flex items-center justify-between">
         <Logo size="text-[19px]" />
         <Link href="/config" className="w-10 h-10 rounded-full flex items-center justify-center font-extrabold text-[15px] text-[#3c2a10] overflow-hidden"
@@ -123,6 +137,28 @@ export default function Home() {
             +50 pontos e a conquista Alquimista ao concluir
           </div>
         </div>
+      )}
+
+      {/* 4.1 — aviso: mistura acabando (dia 12+ de uso) */}
+      {preparou && mistura?.acabando && (
+        <Link href="/receita" className="card block mt-4 p-4"
+          style={{ borderColor: "rgba(246,173,85,.5)", background: "linear-gradient(160deg, rgba(246,173,85,.10), rgba(255,255,255,.03))" }}>
+          <div className="flex items-center gap-3">
+            <div className="w-[42px] h-[42px] flex-none rounded-[13px] flex items-center justify-center"
+              style={{ background: "rgba(246,173,85,.14)", border: "1px solid rgba(246,173,85,.45)" }}>
+              <Icone nome="cha" cor="#f6ad55" size={22} />
+            </div>
+            <div className="flex-1">
+              <div className="text-[14px] font-extrabold text-gold">
+                {mistura.restantes <= 0 ? "Sua mistura acabou!" : `Sua mistura acaba em ${mistura.restantes} ${mistura.restantes === 1 ? "noite" : "noites"}`}
+              </div>
+              <div className="text-[12px] text-sub2 font-semibold mt-0.5 leading-snug">
+                Veja a lista de compras e remonte em 5 min — sem quebrar sua sequência 🔥
+              </div>
+            </div>
+            <span className="text-gold text-[18px]">›</span>
+          </div>
+        </Link>
       )}
 
       {/* Frase do dia */}
@@ -371,6 +407,25 @@ export default function Home() {
             <div className="text-gold text-[18px]">›</div>
           </div>
         </Link>
+      )}
+
+      {/* 3.2 — Noite de Perdão (proteção de streak visível) */}
+      {preparou && streak >= 2 && (
+        <div className="card mt-4 p-4" style={{ background: "rgba(126,232,178,.05)", borderColor: "rgba(126,232,178,.25)" }}>
+          <div className="flex items-center gap-3">
+            <div className="text-[24px] flex-none">{perdao.disponivel ? "🛡️" : "💛"}</div>
+            <div className="flex-1">
+              <div className="text-[13px] font-extrabold text-green">
+                {perdao.disponivel ? "Sua sequência está protegida" : "Noite de Perdão usada"}
+              </div>
+              <div className="text-[11.5px] text-sub2 font-semibold mt-0.5 leading-snug">
+                {perdao.disponivel
+                  ? "Se você perder 1 noite, a Noite de Perdão segura sua sequência (1 a cada 7 dias). Sem culpa — é só voltar no dia seguinte. 💛"
+                  : "Uma noite perdida foi perdoada e sua sequência continuou. Uma nova proteção chega ao completar 7 noites."}
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* GAMIFICAÇÃO */}

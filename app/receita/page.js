@@ -3,7 +3,9 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { PageShell, Logo, Splash } from "../../components/ui";
-import { load, save, progressao, ajustesReceita } from "../../lib/store";
+import { load, save, progressao, ajustesReceita, estadoMistura, renovarMistura } from "../../lib/store";
+import { vibrar } from "../../components/ui";
+import { syncNow } from "../../lib/sync";
 import { FASE1, FASE2_TEASER, FASE3_TEASER } from "../../lib/receitas";
 import { Icone } from "../../components/icones";
 
@@ -79,15 +81,41 @@ export default function Receita() {
         </div>
       )}
 
-      {/* status preparo */}
+      {/* status preparo + 4.1 vida útil da mistura */}
       {preparou ? (
-        <div className="card mt-5 p-4 flex items-center gap-3" style={{ borderColor: "rgba(126,232,178,.35)" }}>
-          <span className="text-[22px]">🧪</span>
-          <div>
-            <div className="text-[14.5px] font-extrabold text-green">Mistura pronta — rende ~14 noites</div>
-            <div className="text-[12.5px] text-sub font-semibold">Conquista Alquimista desbloqueada</div>
-          </div>
-        </div>
+        (() => {
+          const mist = estadoMistura(s);
+          const acabando = mist?.acabando;
+          return (
+            <div className="card mt-5 p-4" style={{ borderColor: acabando ? "rgba(246,173,85,.5)" : "rgba(126,232,178,.35)" }}>
+              <div className="flex items-center gap-3">
+                <span className="text-[22px]">🧪</span>
+                <div className="flex-1">
+                  {acabando ? (
+                    <>
+                      <div className="text-[14.5px] font-extrabold text-gold">
+                        {mist.restantes <= 0 ? "Sua mistura acabou — hora de remontar!" : `Sua mistura rende mais ${mist.restantes} ${mist.restantes === 1 ? "noite" : "noites"}`}
+                      </div>
+                      <div className="text-[12.5px] text-sub font-semibold mt-0.5">Reveja a lista abaixo e remonte em 5 min — sem quebrar sua sequência</div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="text-[14.5px] font-extrabold text-green">Mistura pronta — rende ~14 noites</div>
+                      <div className="text-[12.5px] text-sub font-semibold">Noite {mist?.diasUso || 1} de uso · Conquista Alquimista desbloqueada</div>
+                    </>
+                  )}
+                </div>
+              </div>
+              {acabando && (
+                <button
+                  onClick={() => { vibrar(); const st = renovarMistura(load()); setS({ ...st }); syncNow(); }}
+                  className="cta-gold w-full py-3 mt-3.5 text-[14px]">
+                  Já remontei minha mistura ✅ (+10 pontos)
+                </button>
+              )}
+            </div>
+          );
+        })()
       ) : (
         <Link href="/preparo" className="cta-gold block text-center py-4 mt-5 text-[15.5px]">
           Montar minha mistura (5 min, sem fogão)
