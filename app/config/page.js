@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { PageShell, Logo } from "../../components/ui";
+import { PageShell, Logo, Splash } from "../../components/ui";
 import { load, save, resetAll, estadoImpulsos, setImpulso, salvarFotoPerfil } from "../../lib/store";
 import { comprimirFoto } from "../../lib/foto";
 import { signOut, supabase } from "../../lib/supabase";
@@ -30,7 +30,7 @@ export default function Config() {
     setPermNotif(statusPermissao());
   }, [router]);
 
-  if (!s) return <div className="app-bg min-h-dvh" />;
+  if (!s) return <Splash />;
 
   function salvar() {
     const st = { ...s };

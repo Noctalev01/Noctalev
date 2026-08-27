@@ -1,7 +1,8 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Stars } from "../../components/ui";
+import { Stars, Splash, vibrarFesta } from "../../components/ui";
+import Confete from "../../components/Confete";
 import { load, save } from "../../lib/store";
 import { syncNow } from "../../lib/sync";
 
@@ -14,9 +15,10 @@ export default function Celebracao() {
     if (!st.perfil) { router.replace("/onboarding"); return; }
     if (!st.fase2LiberadaEm) { router.replace("/"); return; }
     setS(st);
+    vibrarFesta();
   }, [router]);
 
-  if (!s) return <div className="app-bg min-h-dvh" />;
+  if (!s) return <Splash />;
 
   function fechar() {
     const st = { ...s, celebracaoVista: true };
@@ -28,11 +30,7 @@ export default function Celebracao() {
   return (
     <div className="app-bg relative max-w-md mx-auto min-h-dvh">
       <Stars />
-      {/* confete simples */}
-      {["🎉", "✨", "🌟", "💛", "🎊"].map((e, i) => (
-        <div key={i} className="absolute text-[28px] anim-float pointer-events-none"
-          style={{ top: `${8 + i * 6}%`, left: `${10 + i * 18}%`, animationDelay: `${i * 0.4}s` }}>{e}</div>
-      ))}
+      <Confete quantidade={160} duracao={4500} />
       <div className="relative z-10 px-6 pt-14 pb-10 flex flex-col min-h-dvh justify-center text-center">
         <div className="text-[64px] anim-pop">🎉</div>
         <h1 className="text-[30px] font-black tracking-tight mt-4 leading-tight">

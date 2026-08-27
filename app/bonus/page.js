@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { PageShell, Logo } from "../../components/ui";
+import { PageShell, Logo, Splash } from "../../components/ui";
 import { load, diaProtocolo } from "../../lib/store";
 
 const BONUS = [
@@ -57,7 +57,7 @@ export default function Bonus() {
     setS(st);
   }, [router]);
 
-  if (!s) return <div className="app-bg min-h-dvh" />;
+  if (!s) return <Splash />;
 
   const dia = s.receitaPreparadaEm ? diaProtocolo(s) : 1;
 

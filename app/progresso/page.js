@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { PageShell, Logo } from "../../components/ui";
+import { PageShell, Logo, Splash } from "../../components/ui";
 import { load, save, salvarFotoAntes, pesosOrdenados, calcStreak, CONQUISTAS, SONO_OPTS, hojeSP, pesoPerdido } from "../../lib/store";
 import { comprimirFoto } from "../../lib/foto";
 import { syncNow } from "../../lib/sync";
@@ -95,7 +95,7 @@ export default function Progresso() {
     setS(st);
   }, [router]);
 
-  if (!s) return <div className="app-bg min-h-dvh" />;
+  if (!s) return <Splash />;
 
   async function escolherFoto(e) {
     setFotoErro("");

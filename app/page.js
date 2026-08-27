@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { PageShell, Logo, Ring, Sparkline } from "../components/ui";
+import { PageShell, Logo, Ring, Sparkline, Splash, ContadorNumero, vibrar } from "../components/ui";
 import {
   load, saudacao, diaProtocolo, scoreSono, pesoPerdido, pesosOrdenados,
   progressao, calcStreak, hojeSP, verificarDesbloqueio, fraseDoDia,
@@ -61,7 +61,7 @@ export default function Home() {
     }
   }
 
-  if (!s) return <div className="app-bg min-h-dvh" />;
+  if (!s) return <Splash />;
 
   const nome = s.perfil.nome;
   const dia = diaProtocolo(s);
@@ -206,7 +206,9 @@ export default function Home() {
           <div>
             {perdido > 0 ? (
               <>
-                <div className="text-[36px] font-black text-green tracking-tight">−{fmtKg(perdido)} kg</div>
+                <div className="text-[36px] font-black text-green tracking-tight">
+                  <ContadorNumero valor={perdido} decimais={1} duracao={1100} prefixo="−" sufixo=" kg" />
+                </div>
                 <div className="text-[13.5px] text-gold font-bold">em {dia} {dia === 1 ? "dia" : "dias"}</div>
               </>
             ) : (
@@ -276,7 +278,7 @@ export default function Home() {
                 <div key={imp.id}>
                   <div className="flex items-center gap-3 w-full">
                     <button
-                      onClick={() => { if (!imp.feitoHoje) { const st = concluirImpulso(load(), imp.id); setS({ ...st }); syncNow(); } }}
+                      onClick={() => { if (!imp.feitoHoje) { vibrar(); const st = concluirImpulso(load(), imp.id); setS({ ...st }); syncNow(); } }}
                       className="flex items-center gap-3 flex-1 text-left">
                       <span className={`w-7 h-7 flex-none rounded-lg border flex items-center justify-center text-[14px] ${
                         imp.feitoHoje ? "bg-green/20 border-green text-green" : "border-white/25 text-transparent"
@@ -327,7 +329,7 @@ export default function Home() {
           <div className="p-[16px_18px_18px]">
             <div className="flex justify-between items-center text-[11px] font-bold">
               <span className="text-sub">Evolução do seu corpo</span>
-              <span className="text-gold">{prog.pct}%</span>
+              <span className="text-gold"><ContadorNumero valor={prog.pct} duracao={1100} sufixo="%" /></span>
             </div>
             <div className="bar-track mt-2">
               <div className="bar-fill" style={{ width: `${prog.pct}%` }} />
@@ -379,7 +381,9 @@ export default function Home() {
           { v: nConq, l: nConq === 1 ? "conquista" : "conquistas", c: "#7ee8b2" },
         ].map((m, i) => (
           <div key={i} className="card p-[16px_8px] text-center">
-            <div className="text-[22px] font-black tracking-tight" style={{ color: m.c }}>{m.v}</div>
+            <div className="text-[22px] font-black tracking-tight" style={{ color: m.c }}>
+              <ContadorNumero valor={m.v} duracao={950} />
+            </div>
             <div className="text-[10.5px] text-sub font-bold mt-1">{m.l}</div>
           </div>
         ))}

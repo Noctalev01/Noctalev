@@ -1,7 +1,8 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Stars, Logo } from "../../components/ui";
+import { Stars, Logo, Splash, vibrarFesta } from "../../components/ui";
+import Confete from "../../components/Confete";
 import { load, registrarRitual, calcStreak, hojeSP, FRASES } from "../../lib/store";
 import { syncNow } from "../../lib/sync";
 import { FASE1 } from "../../lib/receitas";
@@ -29,7 +30,7 @@ export default function Ritual() {
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, [router]);
 
-  if (!s) return <div className="app-bg min-h-dvh" />;
+  if (!s) return <Splash />;
 
   const horaFeitoHoje = s.rituais?.[hojeSP()]; // se existe, o ritual de hoje JÁ foi registrado
   const madrugada = s.perfil?.dificuldade === "madrugada";
@@ -52,6 +53,7 @@ export default function Ritual() {
     setStreak(calcStreak(st));
     setS(st);
     setFeito(true);
+    vibrarFesta();
     syncNow();
   }
 
@@ -81,6 +83,7 @@ export default function Ritual() {
     return (
       <div className="app-bg relative max-w-md mx-auto min-h-dvh">
         <Stars />
+        <Confete quantidade={110} duracao={3200} />
         <div className="relative z-10 px-6 pt-12 pb-10 flex flex-col min-h-dvh justify-center text-center">
           <div className="text-[76px] anim-pop">🍵</div>
           <h1 className="text-[27px] font-black tracking-tight mt-5">Ritual registrado!</h1>

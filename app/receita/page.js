@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { PageShell, Logo } from "../../components/ui";
+import { PageShell, Logo, Splash } from "../../components/ui";
 import { load, save, progressao, ajustesReceita } from "../../lib/store";
 import { FASE1, FASE2_TEASER, FASE3_TEASER } from "../../lib/receitas";
 import { Icone } from "../../components/icones";
@@ -21,7 +21,7 @@ export default function Receita() {
     try { setChecks(JSON.parse(localStorage.getItem("noctalev_compras") || "{}")); } catch {}
   }, [router]);
 
-  if (!s) return <div className="app-bg min-h-dvh" />;
+  if (!s) return <Splash />;
 
   const prog = progressao(s);
   const ajustes = ajustesReceita(s.perfil);

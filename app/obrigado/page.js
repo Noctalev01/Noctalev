@@ -7,7 +7,7 @@
 // ============================================================
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Stars } from "../../components/ui";
+import { Stars, Splash } from "../../components/ui";
 
 function estaInstalado() {
   if (typeof window === "undefined") return false;
@@ -61,7 +61,7 @@ export default function Obrigado() {
     } catch {}
   }
 
-  if (!pronto) return <div className="app-bg min-h-dvh" />;
+  if (!pronto) return <Splash />;
 
   return (
     <div className="app-bg relative max-w-md mx-auto min-h-dvh">
