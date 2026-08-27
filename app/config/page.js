@@ -14,6 +14,7 @@ export default function Config() {
   const [nome, setNome] = useState("");
   const [meta, setMeta] = useState("");
   const [lembrete, setLembrete] = useState("21:30");
+  const [textoGrande, setTextoGrande] = useState(false);
   const [lembreteManha, setLembreteManha] = useState("08:30");
   const [salvo, setSalvo] = useState(false);
   const [permNotif, setPermNotif] = useState("default");
@@ -27,15 +28,26 @@ export default function Config() {
     setMeta(String(st.perfil.pesoMeta).replace(".", ","));
     setLembrete(st.config?.lembreteRitual || "21:30");
     setLembreteManha(st.config?.lembreteCheckin || "08:30");
+    setTextoGrande(!!st.config?.textoGrande);
     setPermNotif(statusPermissao());
   }, [router]);
 
   if (!s) return <Splash />;
 
+  // 2.2 — letra maior: aplica na hora e salva a preferência
+  function alternarTextoGrande() {
+    const novo = !textoGrande;
+    setTextoGrande(novo);
+    document.body.classList.toggle("texto-grande", novo);
+    const st = load();
+    st.config = { ...st.config, textoGrande: novo };
+    setS(save(st));
+  }
+
   function salvar() {
     const st = { ...s };
     st.perfil = { ...st.perfil, nome: nome.trim() || st.perfil.nome, pesoMeta: parseFloat(String(meta).replace(",", ".")) || st.perfil.pesoMeta };
-    st.config = { ...st.config, lembreteRitual: lembrete, lembreteCheckin: lembreteManha };
+    st.config = { ...st.config, lembreteRitual: lembrete, lembreteCheckin: lembreteManha, textoGrande };
     setS(save(st));
     setSalvo(true);
     setTimeout(() => setSalvo(false), 2000);
@@ -123,6 +135,24 @@ export default function Config() {
           Sua foto aparece no seu perfil e na sua posição do ranking da turma.
         </p>
         {fotoErro && <div className="text-[12.5px] font-bold text-[#e57373] mt-2">{fotoErro}</div>}
+      </div>
+
+      {/* 2.2 — TAMANHO DO TEXTO */}
+      <div className="card mt-5 p-5">
+        <div className="eyebrow">Tamanho do texto</div>
+        <div className="flex gap-2.5 mt-3">
+          <button onClick={() => textoGrande && alternarTextoGrande()}
+            className={`opt-btn flex-1 py-3.5 text-[14px] font-extrabold ${!textoGrande ? "on" : ""}`}>
+            Normal
+          </button>
+          <button onClick={() => !textoGrande && alternarTextoGrande()}
+            className={`opt-btn flex-1 py-3.5 text-[16.5px] font-extrabold ${textoGrande ? "on" : ""}`}>
+            Grande
+          </button>
+        </div>
+        <p className="text-[11.5px] text-sub font-semibold mt-2.5">
+          Deixa todas as letras do app maiores — mais conforto para ler.
+        </p>
       </div>
 
       <div className="card mt-5 p-5 space-y-4">

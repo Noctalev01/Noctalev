@@ -31,6 +31,9 @@ export default function Preparo() {
     const st = { ...s };
     if (passo + 1 >= total) {
       concluirPreparo(st);
+      // a tela "Alquimista" já celebra aqui — tira da fila para não celebrar 2x na Home
+      st.conquistasNaoVistas = (st.conquistasNaoVistas || []).filter((t) => t !== "alquimista");
+      save(st);
       setPronto(true);
       vibrarFesta();
       syncNow();
