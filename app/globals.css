@@ -168,7 +168,9 @@ input:focus { border-color: #a5b4fc; }
   0% { opacity: 0; transform: translateY(6px); }
   100% { opacity: 1; transform: translateY(0); }
 }
-.page-in { animation: pageIn 0.28s ease-out both; }
+/* fill-mode "forwards" removido: manter o transform aplicado após a animação
+   quebrava o position:fixed do menu inferior (ele "rolava" com a página). */
+.page-in { animation: pageIn 0.28s ease-out; }
 
 /* ===== 1.7 — TabBar: indicador + safe area do iPhone ===== */
 .tabbar-safe { padding-bottom: env(safe-area-inset-bottom, 0px); }

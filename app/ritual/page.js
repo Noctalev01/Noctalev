@@ -7,6 +7,8 @@ import { load, registrarRitual, calcStreak, hojeSP, FRASES } from "../../lib/sto
 import { syncNow } from "../../lib/sync";
 import { FASE1 } from "../../lib/receitas";
 import GuiaAudio from "../../components/GuiaAudio";
+import Respiracao478 from "../../components/Respiracao478";
+import ModoNoite from "../../components/ModoNoite";
 
 function fmtTimer(seg) {
   const m = Math.floor(seg / 60), s = seg % 60;
@@ -73,6 +75,7 @@ export default function Ritual() {
             Seu corpo agradece. Agora é luz baixa, celular fora da cama e um sono profundo. 🌙
           </p>
           <p className="text-[13px] text-sub font-semibold mt-3">Volte amanhã à noite para o próximo chá — sua sequência continua! 🔥</p>
+          <div className="text-left"><Respiracao478 /></div>
           <button onClick={() => router.replace("/")} className="cta-gold w-full py-4 mt-8 text-[16px]">Voltar ao painel</button>
         </div>
       </div>
@@ -92,6 +95,7 @@ export default function Ritual() {
           </div>
           <p className="text-[15.5px] text-sub2 font-semibold mt-6 leading-relaxed px-3">“{frase}”</p>
           <p className="text-[13.5px] text-sub font-semibold mt-4">Agora: luz baixa e celular fora da cama. Boa noite! ✨</p>
+          <div className="text-left"><Respiracao478 /></div>
           <button onClick={() => router.replace("/")} className="cta-gold w-full py-4 mt-9 text-[16px]">Continuar</button>
         </div>
       </div>
@@ -104,6 +108,7 @@ export default function Ritual() {
       <div className="relative z-10 px-6 pt-12 pb-10 flex flex-col min-h-dvh">
         <Logo />
         <button onClick={() => router.push("/")} className="text-left text-[13px] text-sub font-bold mt-6">← Voltar</button>
+        <ModoNoite />
         <div className="flex-1 flex flex-col justify-center">
           <div className="rounded-2xl overflow-hidden anim-pop" style={{ border: "1px solid rgba(251,211,141,.25)" }}>
             <img src="/img/ritual-noite.jpg" alt="" className="w-full h-[150px] object-cover" />
