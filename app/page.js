@@ -72,9 +72,11 @@ export default function Home() {
     <PageShell>
       <div className="flex items-center justify-between">
         <Logo size="text-[19px]" />
-        <Link href="/config" className="w-10 h-10 rounded-full flex items-center justify-center font-extrabold text-[15px] text-[#3c2a10]"
-          style={{ background: "linear-gradient(135deg,#f6ad55,#ed8936)" }}>
-          {nome?.[0]?.toUpperCase() || "?"}
+        <Link href="/config" className="w-10 h-10 rounded-full flex items-center justify-center font-extrabold text-[15px] text-[#3c2a10] overflow-hidden"
+          style={{ background: "linear-gradient(135deg,#f6ad55,#ed8936)", border: s.fotoPerfil ? "2px solid #fbd38d" : "none" }}>
+          {s.fotoPerfil
+            ? <img src={s.fotoPerfil} alt="" className="w-full h-full object-cover" />
+            : (nome?.[0]?.toUpperCase() || "?")}
         </Link>
       </div>
       <div className="mt-6">

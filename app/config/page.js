@@ -2,7 +2,8 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { PageShell, Logo } from "../../components/ui";
-import { load, save, resetAll, estadoImpulsos, setImpulso } from "../../lib/store";
+import { load, save, resetAll, estadoImpulsos, setImpulso, salvarFotoPerfil } from "../../lib/store";
+import { comprimirFoto } from "../../lib/foto";
 import { signOut } from "../../lib/supabase";
 import { syncNow } from "../../lib/sync";
 import { statusPermissao, pedirPermissao, agendarLembretes, notificarTeste, suportaNotificacao } from "../../lib/notificacoes";
@@ -16,6 +17,7 @@ export default function Config() {
   const [lembreteManha, setLembreteManha] = useState("08:30");
   const [salvo, setSalvo] = useState(false);
   const [permNotif, setPermNotif] = useState("default");
+  const [fotoErro, setFotoErro] = useState("");
 
   useEffect(() => {
     const st = load();
@@ -50,6 +52,27 @@ export default function Config() {
     }
   }
 
+  async function escolherFotoPerfil(e) {
+    setFotoErro("");
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const dataURL = await comprimirFoto(file, 300, 0.78); // avatar pequeno e leve
+      const st = salvarFotoPerfil(load(), dataURL);
+      setS({ ...st });
+      syncNow();
+    } catch {
+      setFotoErro("Não foi possível carregar a foto. Tente outra imagem.");
+    }
+    e.target.value = "";
+  }
+
+  function removerFotoPerfil() {
+    const st = salvarFotoPerfil(load(), null);
+    setS({ ...st });
+    syncNow();
+  }
+
   async function sair() {
     if (confirm("Tem certeza que deseja sair?")) {
       await syncNow();      // garante que tudo está salvo na nuvem
@@ -63,6 +86,37 @@ export default function Config() {
     <PageShell>
       <Logo size="text-[19px]" />
       <h1 className="text-[25px] font-extrabold tracking-tight mt-6">Ajustes</h1>
+
+      {/* FOTO DE PERFIL */}
+      <div className="card mt-5 p-5">
+        <div className="eyebrow">Foto de perfil</div>
+        <div className="flex items-center gap-4 mt-3">
+          {s.fotoPerfil ? (
+            <img src={s.fotoPerfil} alt="Sua foto" className="w-[72px] h-[72px] rounded-full object-cover flex-none"
+              style={{ border: "2.5px solid #fbd38d" }} />
+          ) : (
+            <div className="w-[72px] h-[72px] rounded-full flex-none flex items-center justify-center font-black text-[28px] text-[#3c2a10]"
+              style={{ background: "linear-gradient(135deg,#f6ad55,#ed8936)", border: "2.5px solid #fbd38d" }}>
+              {(s.perfil.nome || "?")[0]?.toUpperCase()}
+            </div>
+          )}
+          <div className="flex-1">
+            <label className="cta-gold block text-center py-2.5 text-[13.5px] cursor-pointer">
+              {s.fotoPerfil ? "Trocar foto" : "Adicionar foto"}
+              <input type="file" accept="image/*" className="hidden" onChange={escolherFotoPerfil} />
+            </label>
+            {s.fotoPerfil && (
+              <button onClick={removerFotoPerfil} className="block w-full text-center text-[12px] font-bold text-sub mt-2">
+                Remover foto
+              </button>
+            )}
+          </div>
+        </div>
+        <p className="text-[11.5px] text-sub font-semibold mt-3 leading-relaxed">
+          Sua foto aparece no seu perfil e na sua posição do ranking da turma.
+        </p>
+        {fotoErro && <div className="text-[12.5px] font-bold text-[#e57373] mt-2">{fotoErro}</div>}
+      </div>
 
       <div className="card mt-5 p-5 space-y-4">
         <div>

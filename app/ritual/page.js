@@ -102,14 +102,16 @@ export default function Ritual() {
         <Logo />
         <button onClick={() => router.push("/")} className="text-left text-[13px] text-sub font-bold mt-6">← Voltar</button>
         <div className="flex-1 flex flex-col justify-center">
-          <div className="text-[64px] text-center anim-float">🍵</div>
+          <div className="rounded-2xl overflow-hidden anim-pop" style={{ border: "1px solid rgba(251,211,141,.25)" }}>
+            <img src="/img/ritual-noite.jpg" alt="" className="w-full h-[150px] object-cover" />
+          </div>
           <h1 className="text-[25px] font-black tracking-tight mt-4 text-center">Hora do seu chá da noite</h1>
           <p className="text-sub text-[13px] font-semibold text-center mt-1.5">Tome {quando}</p>
 
           <div className="mt-4">
             <GuiaAudio texto={FASE1.audioRitual} rotulo="Ouvir o passo a passo (guia em áudio)" />
             <div className="text-[11.5px] text-sub font-semibold text-center mt-1.5">
-              Prefere ouvir? Aperte o play e siga com calma 💛
+              Prefere ouvir? Aperte o play e siga com calma
             </div>
           </div>
 
