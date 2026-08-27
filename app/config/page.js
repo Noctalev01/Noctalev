@@ -4,9 +4,9 @@ import { useRouter } from "next/navigation";
 import { PageShell, Logo } from "../../components/ui";
 import { load, save, resetAll, estadoImpulsos, setImpulso, salvarFotoPerfil } from "../../lib/store";
 import { comprimirFoto } from "../../lib/foto";
-import { signOut } from "../../lib/supabase";
+import { signOut, supabase } from "../../lib/supabase";
 import { syncNow } from "../../lib/sync";
-import { statusPermissao, pedirPermissao, agendarLembretes, notificarTeste, suportaNotificacao } from "../../lib/notificacoes";
+import { statusPermissao, pedirPermissao, agendarLembretes, notificarTeste, suportaNotificacao, ativarPush } from "../../lib/notificacoes";
 
 export default function Config() {
   const router = useRouter();
@@ -41,6 +41,12 @@ export default function Config() {
     setTimeout(() => setSalvo(false), 2000);
     syncNow();
     agendarLembretes(); // reagenda com a nova hora
+    atualizarPush();    // atualiza também o horário salvo na nuvem (push)
+  }
+
+  async function atualizarPush() {
+    const { data } = supabase ? await supabase.auth.getSession() : { data: null };
+    ativarPush(data?.session?.user?.id || null);
   }
 
   async function ativarNotificacoes() {
@@ -49,6 +55,7 @@ export default function Config() {
     if (r === "granted") {
       agendarLembretes();
       await notificarTeste();
+      atualizarPush(); // registra o aparelho para receber push com o app fechado
     }
   }
 

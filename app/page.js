@@ -10,7 +10,7 @@ import {
 } from "../lib/store";
 import { supabase } from "../lib/supabase";
 import { pullFromCloud, syncNow } from "../lib/sync";
-import { agendarLembretes, statusPermissao, pedirPermissao, notificarTeste } from "../lib/notificacoes";
+import { agendarLembretes, statusPermissao, pedirPermissao, notificarTeste, ativarPush } from "../lib/notificacoes";
 import { rankingDoDia } from "../lib/turma";
 import { Icone, IconBox } from "../components/icones";
 import InstalarApp from "../components/InstalarApp";
@@ -28,11 +28,13 @@ export default function Home() {
   useEffect(() => {
     async function init() {
       // exige sessão quando Supabase está configurado
+      let uid = null;
       if (supabase) {
         const { data } = await supabase.auth.getSession();
         const sess = data?.session;
         if (!sess) { router.replace("/onboarding"); return; }
-        await pullFromCloud(sess.user.id); // dados mais recentes da nuvem
+        uid = sess.user.id;
+        await pullFromCloud(uid); // dados mais recentes da nuvem
       }
       const st = load();
       if (!st.perfil) { router.replace("/onboarding"); return; }
@@ -42,7 +44,8 @@ export default function Home() {
       }
       setS(st);
       setNotif(statusPermissao());
-      agendarLembretes(); // lembrete do ritual (se permissão concedida)
+      agendarLembretes(); // lembrete local (app aberto)
+      ativarPush(uid);    // push remoto — chega mesmo com o app fechado
     }
     init();
   }, [router]);
@@ -50,7 +53,12 @@ export default function Home() {
   async function ativarNotif() {
     const r = await pedirPermissao();
     setNotif(r);
-    if (r === "granted") { agendarLembretes(); notificarTeste(); }
+    if (r === "granted") {
+      agendarLembretes();
+      notificarTeste();
+      const { data } = supabase ? await supabase.auth.getSession() : { data: null };
+      ativarPush(data?.session?.user?.id || null);
+    }
   }
 
   if (!s) return <div className="app-bg min-h-dvh" />;
