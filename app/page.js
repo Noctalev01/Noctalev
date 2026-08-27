@@ -7,8 +7,10 @@ import {
   load, saudacao, diaProtocolo, scoreSono, pesoPerdido, pesosOrdenados,
   progressao, calcStreak, hojeSP, verificarDesbloqueio, fraseDoDia,
   estadoImpulsos, concluirImpulso, verConquista, estadoPerdao, estadoMistura,
+  nivelAtual, resumoSemanal, marcarSemanaVista, marcoPendente, marcarMarcoVisto,
 } from "../lib/store";
 import ModalConquista from "../components/ModalConquista";
+import ModalMarco from "../components/ModalMarco";
 import { supabase } from "../lib/supabase";
 import { pullFromCloud, syncNow } from "../lib/sync";
 import { agendarLembretes, statusPermissao, pedirPermissao, notificarTeste, ativarPush } from "../lib/notificacoes";
@@ -26,6 +28,7 @@ export default function Home() {
   const [notif, setNotif] = useState("granted"); // esconde o card por padrão até saber
   const [impAberto, setImpAberto] = useState(null); // id do impulso com explicação aberta
   const [conquistaNova, setConquistaNova] = useState(null); // 3.1 — modal de celebração
+  const [marco, setMarco] = useState(null); // 3.8 — marco da jornada (7/14/21/30 dias)
 
   useEffect(() => {
     async function init() {
@@ -48,6 +51,7 @@ export default function Home() {
       setNotif(statusPermissao());
       // 3.1 — se há conquista nova não celebrada, abre a festa
       if (st.conquistasNaoVistas?.length) setConquistaNova(st.conquistasNaoVistas[0]);
+      else setMarco(marcoPendente(st)); // 3.8 — só se não há conquista na fila
       agendarLembretes(); // lembrete local (app aberto)
       ativarPush(uid);    // push remoto — chega mesmo com o app fechado
     }
@@ -68,7 +72,23 @@ export default function Home() {
   function fecharConquista() {
     const st = verConquista(load());
     setS({ ...st });
-    setConquistaNova(st.conquistasNaoVistas?.[0] || null);
+    const prox = st.conquistasNaoVistas?.[0] || null;
+    setConquistaNova(prox);
+    if (!prox) setMarco(marcoPendente(st)); // 3.8 — marco espera as conquistas
+    syncNow();
+  }
+
+  function fecharMarco() {
+    const st = marcarMarcoVisto(load(), marco.dia);
+    setS({ ...st });
+    setMarco(null);
+    syncNow();
+  }
+
+  function fecharResumo(chave) {
+    vibrar(10);
+    const st = marcarSemanaVista(load(), chave);
+    setS({ ...st });
     syncNow();
   }
 
@@ -88,10 +108,13 @@ export default function Home() {
   const preparou = !!s.receitaPreparadaEm;
   const mistura = estadoMistura(s);       // 4.1
   const perdao = estadoPerdao(s);         // 3.2
+  const nivel = nivelAtual(s);            // 3.4
+  const resumo = resumoSemanal(s);        // 3.3
 
   return (
     <PageShell>
       {conquistaNova && <ModalConquista tipo={conquistaNova} onFechar={fecharConquista} />}
+      {!conquistaNova && marco && <ModalMarco marco={marco} onFechar={fecharMarco} />}
       <div className="flex items-center justify-between">
         <Logo size="text-[19px]" />
         <Link href="/config" className="w-10 h-10 rounded-full flex items-center justify-center font-extrabold text-[15px] text-[#3c2a10] overflow-hidden"
@@ -105,8 +128,14 @@ export default function Home() {
         <h1 className="text-[25px] font-extrabold tracking-tight leading-tight">
           {saudacao()}, {nome}
         </h1>
-        <div className="text-[13.5px] text-sub font-semibold mt-1">
-          {preparou ? `Dia ${dia} do protocolo · Fase 1` : "Comece montando sua mistura"}
+        <div className="text-[13.5px] text-sub font-semibold mt-1 flex items-center gap-2 flex-wrap">
+          <span>{preparou ? `Dia ${dia} do protocolo · Fase 1` : "Comece montando sua mistura"}</span>
+          {preparou && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-extrabold text-gold"
+              style={{ background: "rgba(251,211,141,.1)", border: "1px solid rgba(251,211,141,.35)" }}>
+              {nivel.emoji} {nivel.nome}
+            </span>
+          )}
         </div>
       </div>
 
@@ -159,6 +188,35 @@ export default function Home() {
             <span className="text-gold text-[18px]">›</span>
           </div>
         </Link>
+      )}
+
+      {/* 3.3 — Resumo semanal "Sua semana" (aparece no domingo) */}
+      {preparou && resumo && (
+        <div className="card mt-4 p-5" style={{ borderColor: "rgba(165,180,252,.4)", background: "linear-gradient(160deg, rgba(165,180,252,.09), rgba(255,255,255,.03))" }}>
+          <div className="eyebrow" style={{ color: "#a5b4fc" }}>Sua semana 💜</div>
+          <div className="text-[16px] font-extrabold leading-tight mt-1.5">Olha o que você construiu:</div>
+          <div className="grid grid-cols-2 gap-2.5 mt-3.5">
+            <div className="rounded-xl p-3 text-center" style={{ background: "rgba(251,211,141,.07)" }}>
+              <div className="text-[22px] font-black text-gold tracking-tight">{resumo.rituais}</div>
+              <div className="text-[10.5px] text-sub font-bold mt-0.5">{resumo.rituais === 1 ? "ritual feito" : "rituais feitos"}</div>
+            </div>
+            <div className="rounded-xl p-3 text-center" style={{ background: "rgba(165,180,252,.07)" }}>
+              <div className="text-[22px] font-black text-lilac tracking-tight">{resumo.checkins}</div>
+              <div className="text-[10.5px] text-sub font-bold mt-0.5">check-ins</div>
+            </div>
+          </div>
+          <div className="text-[12.5px] text-sub2 font-semibold leading-relaxed mt-3">
+            {resumo.sonoDelta != null && resumo.sonoDelta > 0 && <>Seu sono melhorou <b className="text-green">+{resumo.sonoDelta}%</b> em relação à semana anterior. </>}
+            {resumo.pesoDelta != null && resumo.pesoDelta >= 0.1 && <>Você eliminou <b className="text-green">−{resumo.pesoDelta.toFixed(1).replace(".", ",")} kg</b> esta semana. </>}
+            {(resumo.sonoDelta == null || resumo.sonoDelta <= 0) && (resumo.pesoDelta == null || resumo.pesoDelta < 0.1) && <>Cada ritual conta — a constância é o que traz o resultado. </>}
+            Semana nova começando: bora brilhar de novo! ✨
+          </div>
+          <button onClick={() => fecharResumo(resumo.chave)}
+            className="w-full py-3 mt-3.5 rounded-2xl text-[13.5px] font-extrabold text-lilac"
+            style={{ background: "rgba(165,180,252,.12)", border: "1px solid rgba(165,180,252,.3)" }}>
+            Começar a nova semana 🌙
+          </button>
+        </div>
       )}
 
       {/* Frase do dia */}
@@ -424,6 +482,28 @@ export default function Home() {
                   : "Uma noite perdida foi perdoada e sua sequência continuou. Uma nova proteção chega ao completar 7 noites."}
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* 3.4 — Nível: progresso rumo ao próximo título */}
+      {preparou && (
+        <div className="card mt-4 p-[16px_18px]">
+          <div className="flex justify-between items-center">
+            <div className="text-[13.5px] font-extrabold">
+              <span className="mr-1">{nivel.emoji}</span> Nível: <span className="text-gold">{nivel.nome}</span>
+            </div>
+            {nivel.proximo && (
+              <div className="text-[11px] text-sub font-bold">{nivel.faltam} pts p/ {nivel.proximo.emoji}</div>
+            )}
+          </div>
+          <div className="bar-track mt-2.5">
+            <div className="bar-fill" style={{ width: `${nivel.pct}%` }} />
+          </div>
+          <div className="text-[11.5px] text-sub2 font-semibold mt-2 leading-snug">
+            {nivel.proximo
+              ? <>Próximo título: <b className="text-txt">{nivel.proximo.emoji} {nivel.proximo.nome}</b> — rituais e check-ins te levam lá.</>
+              : <>Você chegou ao topo: <b className="text-gold">Rainha do Sono</b> 👑 Continue reinando!</>}
           </div>
         </div>
       )}

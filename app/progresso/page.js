@@ -2,9 +2,14 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { PageShell, Logo, Splash } from "../../components/ui";
-import { load, save, salvarFotoAntes, pesosOrdenados, calcStreak, CONQUISTAS, SONO_OPTS, hojeSP, pesoPerdido } from "../../lib/store";
+import {
+  load, save, salvarFotoAntes, salvarFotoAgora, pesosOrdenados, calcStreak,
+  CONQUISTAS, SONO_OPTS, hojeSP, pesoPerdido, diaProtocolo, scoreSono,
+  nivelAtual, progressoConquistas,
+} from "../../lib/store";
 import { comprimirFoto } from "../../lib/foto";
 import { syncNow } from "../../lib/sync";
+import CardCompartilhar from "../../components/CardCompartilhar";
 
 const LBL = { 1: "Péssimo", 2: "Ruim", 3: "Regular", 4: "Bom", 5: "Excelente" };
 
@@ -112,12 +117,33 @@ export default function Progresso() {
     e.target.value = "";
   }
 
+  // 3.7 — foto "agora" para comparar com a de antes
+  async function escolherFotoAgora(e) {
+    setFotoErro("");
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const dataURL = await comprimirFoto(file);
+      const st = salvarFotoAgora(load(), dataURL);
+      setS({ ...st });
+      syncNow();
+    } catch {
+      setFotoErro("Não foi possível carregar a foto. Tente outra imagem.");
+    }
+    e.target.value = "";
+  }
+
   const todos = pesosOrdenados(s);
   const corte = new Date(); corte.setDate(corte.getDate() - periodo);
   const corteISO = corte.toISOString().slice(0, 10);
   const pesos = todos.filter((p) => p.data >= corteISO);
   const streak = calcStreak(s);
   const checkinsArr = Object.entries(s.checkins).sort((a, b) => a[0].localeCompare(b[0]));
+  const nivel = nivelAtual(s);                 // 3.4
+  const progConq = progressoConquistas(s);     // 3.5
+  const sono = scoreSono(s);
+  const kgPerdidos = pesoPerdido(s);
+  const preparou = !!s.receitaPreparadaEm;
 
   // recorde de streak (aprox: streak atual como mínimo; calcula histórico)
   let recorde = streak, atual = 0, prev = null;
@@ -190,6 +216,53 @@ export default function Progresso() {
         {fotoErro && <div className="text-[12.5px] font-bold text-[#e57373] mt-3">{fotoErro}</div>}
       </div>
 
+      {/* 3.7 — Antes × Agora */}
+      {s.fotoAntes && (
+        <div className="card mt-4 p-5">
+          <div className="eyebrow">Antes × Agora</div>
+          {s.fotoAgora ? (
+            <>
+              <div className="grid grid-cols-2 gap-3 mt-4">
+                <div className="text-center">
+                  <img src={s.fotoAntes} alt="Antes" className="w-full aspect-[3/4] object-cover rounded-[16px]"
+                    style={{ border: "2px solid rgba(143,151,192,.4)", filter: "saturate(.85)" }} />
+                  <div className="text-[11px] text-sub font-bold mt-1.5">
+                    ANTES{s.fotoAntesEm ? ` · ${new Date(s.fotoAntesEm).toLocaleDateString("pt-BR")}` : ""}
+                  </div>
+                </div>
+                <div className="text-center">
+                  <img src={s.fotoAgora} alt="Agora" className="w-full aspect-[3/4] object-cover rounded-[16px]"
+                    style={{ border: "2px solid rgba(251,211,141,.55)" }} />
+                  <div className="text-[11px] text-gold font-bold mt-1.5">
+                    AGORA{s.fotoAgoraEm ? ` · ${new Date(s.fotoAgoraEm).toLocaleDateString("pt-BR")}` : ""}
+                  </div>
+                </div>
+              </div>
+              {kgPerdidos > 0 && (
+                <div className="rounded-xl p-3 mt-3 text-center" style={{ background: "rgba(126,232,178,.08)", border: "1px solid rgba(126,232,178,.3)" }}>
+                  <span className="text-[14px] font-black text-green">−{kgPerdidos.toFixed(1).replace(".", ",")} kg</span>
+                  <span className="text-[12px] text-sub2 font-semibold"> entre as duas fotos 🎉</span>
+                </div>
+              )}
+              <label className="inline-block mt-3 text-[12.5px] font-bold text-lilac cursor-pointer">
+                Atualizar foto de agora
+                <input type="file" accept="image/*" className="hidden" onChange={escolherFotoAgora} />
+              </label>
+            </>
+          ) : (
+            <label className="mt-4 p-4 flex items-center gap-3 cursor-pointer rounded-2xl active:opacity-80"
+              style={{ border: "1.5px dashed rgba(165,180,252,.4)", background: "rgba(165,180,252,.05)" }}>
+              <span className="text-[24px] flex-none">✨</span>
+              <span className="flex-1">
+                <span className="block text-[13.5px] font-extrabold text-lilac">Adicionar foto de "agora"</span>
+                <span className="block text-[11.5px] text-sub font-semibold mt-0.5">Compare lado a lado com a sua foto de antes — privada, só você vê.</span>
+              </span>
+              <input type="file" accept="image/*" className="hidden" onChange={escolherFotoAgora} />
+            </label>
+          )}
+        </div>
+      )}
+
       <div className="card mt-5 p-5">
         <div className="flex justify-between items-center">
           <div className="eyebrow">Evolução do peso</div>
@@ -260,16 +333,49 @@ export default function Progresso() {
         <div className="grid grid-cols-2 gap-3 mt-4">
           {Object.entries(CONQUISTAS).map(([tipo, c]) => {
             const tem = !!s.conquistas[tipo];
+            const pg = !tem ? progConq[tipo] : null; // 3.5 — "falta pouco"
+            const pct = pg ? Math.min(100, Math.round((pg.atual / pg.meta) * 100)) : 0;
             return (
-              <div key={tipo} className={`rounded-2xl p-3 border ${tem ? "border-gold/50 bg-gold/10" : "border-white/10 bg-white/[.03] opacity-50"}`}>
-                <div className="text-[22px]">{tem ? c.emoji : "🔒"}</div>
-                <div className="text-[12.5px] font-extrabold mt-1">{c.nome}</div>
-                <div className="text-[10.5px] text-sub font-semibold mt-0.5">{c.desc}</div>
+              <div key={tipo} className={`rounded-2xl p-3 border ${tem ? "border-gold/50 bg-gold/10" : "border-white/10 bg-white/[.03]"}`}>
+                <div className={`text-[22px] ${tem ? "" : "opacity-45"}`}>{tem ? c.emoji : "🔒"}</div>
+                <div className={`text-[12.5px] font-extrabold mt-1 ${tem ? "" : "opacity-60"}`}>{c.nome}</div>
+                <div className={`text-[10.5px] text-sub font-semibold mt-0.5 ${tem ? "" : "opacity-70"}`}>{c.desc}</div>
+                {pg && (
+                  <div className="mt-2">
+                    <div className="h-[5px] rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,.08)" }}>
+                      <div className="h-full rounded-full" style={{ width: `${pct}%`, background: pct >= 60 ? "linear-gradient(90deg,#fbd38d,#f6ad55)" : "rgba(165,180,252,.55)" }} />
+                    </div>
+                    <div className={`text-[10px] font-bold mt-1 ${pct >= 60 ? "text-gold" : "text-sub"}`}>
+                      {pg.decimais
+                        ? `${pg.atual.toFixed(1).replace(".", ",")} de ${pg.meta} ${pg.unid}`
+                        : `${pg.atual} de ${pg.meta} ${pg.unid}`}
+                      {pct >= 60 && pct < 100 ? " — falta pouco! ✨" : ""}
+                    </div>
+                  </div>
+                )}
               </div>
             );
           })}
         </div>
       </div>
+
+      {/* 3.6 — Compartilhar evolução (imagem gerada, só números, sem foto) */}
+      {preparou && (
+        <div className="card mt-4 p-5 text-center">
+          <div className="eyebrow">Espalhe sua vitória</div>
+          <div className="text-[13px] text-sub2 font-semibold leading-relaxed mt-2 mb-4">
+            Gere uma imagem linda com seus números (sem foto, sem peso exato — só o que você conquistou) e mande para quem você ama. 💛
+          </div>
+          <CardCompartilhar
+            nome={s.perfil.nome}
+            dias={diaProtocolo(s)}
+            kg={kgPerdidos}
+            sonoPct={sono ? sono.pct : null}
+            streak={streak}
+            nivel={nivel}
+          />
+        </div>
+      )}
     </PageShell>
   );
 }
