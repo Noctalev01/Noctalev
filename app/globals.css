@@ -9,7 +9,8 @@
 html, body {
   background: #05070f;
   color: #eef0fb;
-  font-family: "Inter", sans-serif;
+  /* 5.4 — a fonte Inter agora vem embutida via next/font (classe no <html>
+     define o font-family; body herda automaticamente). */
   -webkit-tap-highlight-color: transparent;
 }
 
