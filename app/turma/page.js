@@ -89,14 +89,22 @@ export default function Turma() {
   return (
     <PageShell>
       <Logo size="text-[19px]" />
-      <div className="mt-6">
-        <div className="eyebrow">{nomeTurma(s)}</div>
-        <h1 className="text-[25px] font-extrabold tracking-tight mt-1">Sua turma</h1>
-        <p className="text-[13px] text-sub2 font-semibold mt-1.5 leading-relaxed">
-          {total} pessoas na sua turma · Dia {dia} · {ativos} já iniciaram o protocolo
-          {semLogin > 0 ? ` · ${semLogin} ainda não entraram` : ""}
-        </p>
+
+      {/* banner da comunidade */}
+      <div className="card mt-5 overflow-hidden relative" style={{ padding: 0 }}>
+        <img src="/img/turma-banner.jpg" alt="Sua turma caminhando junto"
+          className="w-full h-[150px] object-cover block" />
+        <div className="absolute inset-0"
+          style={{ background: "linear-gradient(180deg, rgba(16,20,44,.05) 20%, rgba(16,20,44,.88) 100%)" }} />
+        <div className="absolute bottom-0 left-0 right-0 p-4">
+          <div className="eyebrow">{nomeTurma(s)}</div>
+          <h1 className="text-[23px] font-extrabold tracking-tight mt-0.5">Sua turma</h1>
+        </div>
       </div>
+      <p className="text-[13px] text-sub2 font-semibold mt-3 leading-relaxed">
+        {total} pessoas na sua turma · Dia {dia} · {ativos} já iniciaram o protocolo
+        {semLogin > 0 ? ` · ${semLogin} ainda não entraram` : ""}
+      </p>
 
       {/* posição da usuária em destaque */}
       <div className="card mt-5 p-4 flex items-center gap-3"
