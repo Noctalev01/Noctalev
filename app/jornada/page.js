@@ -5,7 +5,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { PageShell, Logo } from "../../components/ui";
+import { PageShell, Logo, Splash } from "../../components/ui";
 import { load, diaProtocolo, progressao } from "../../lib/store";
 
 const ETAPAS = [
@@ -96,7 +96,7 @@ export default function Jornada() {
     setS(st);
   }, [router]);
 
-  if (!s) return <div className="app-bg min-h-dvh" />;
+  if (!s) return <Splash />;
 
   const preparou = !!s.receitaPreparadaEm;
   const dia = preparou ? diaProtocolo(s) : 0;

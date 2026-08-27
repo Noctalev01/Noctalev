@@ -1,7 +1,8 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Stars, Logo } from "../../components/ui";
+import { Stars, Logo, Splash, vibrar, vibrarFesta, ContadorNumero } from "../../components/ui";
+import Confete from "../../components/Confete";
 import { load, fazerCheckin, calcStreak, hojeSP, SONO_OPTS, FRASES } from "../../lib/store";
 import { syncNow } from "../../lib/sync";
 
@@ -33,7 +34,7 @@ export default function Checkin() {
     setS(st);
   }, [router]);
 
-  if (!s) return <div className="app-bg min-h-dvh" />;
+  if (!s) return <Splash />;
 
   function finalizar(pular) {
     const p = pular ? null : parseFloat(String(peso).replace(",", "."));
@@ -41,6 +42,7 @@ export default function Checkin() {
     setStreak(calcStreak(st));
     setS(st);
     setTela(3);
+    vibrarFesta();
     syncNow(); // sobe para a nuvem em segundo plano
   }
 
@@ -73,7 +75,7 @@ export default function Checkin() {
             <h1 className="text-[25px] font-black tracking-tight text-center">Como foi seu sono<br />esta noite?</h1>
             <div className="space-y-3 mt-8">
               {SONO_OPTS.map((o) => (
-                <button key={o.v} onClick={() => { setSono(o.v); setTela(1); }}
+                <button key={o.v} onClick={() => { vibrar(10); setSono(o.v); setTela(1); }}
                   className={`opt-btn w-full p-4 flex items-center gap-4 text-[16px] font-extrabold ${sono === o.v ? "on" : ""}`}>
                   <span className="text-[26px]">{o.emoji}</span> {o.label}
                 </button>
@@ -126,8 +128,9 @@ export default function Checkin() {
 
         {tela === 3 && (
           <div className="flex-1 flex flex-col justify-center text-center">
+            <Confete quantidade={110} duracao={3200} />
             <div className="text-[76px] anim-pop">⭐</div>
-            <h1 className="text-[27px] font-black tracking-tight mt-5">+10 pontos!</h1>
+            <h1 className="text-[27px] font-black tracking-tight mt-5">+<ContadorNumero valor={10} duracao={700} /> pontos!</h1>
             <div className="card px-6 py-4 mt-5 inline-block">
               <div className="text-[17px] font-extrabold">🔥 {streak} {streak === 1 ? "noite seguida" : "noites seguidas"}</div>
             </div>

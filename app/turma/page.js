@@ -9,7 +9,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { PageShell, Logo } from "../../components/ui";
+import { PageShell, Logo, Splash } from "../../components/ui";
 import { load } from "../../lib/store";
 import { rankingDoDia, novidadesDoDia, nomeTurma, historicoMembro } from "../../lib/turma";
 import { Icone } from "../../components/icones";
@@ -80,7 +80,7 @@ export default function Turma() {
     setS(st);
   }, [router]);
 
-  if (!s) return <div className="app-bg min-h-dvh" />;
+  if (!s) return <Splash />;
 
   const { dia, linhas, posicao, total, semLogin, ativos } = rankingDoDia(s);
   const novidades = novidadesDoDia(s);

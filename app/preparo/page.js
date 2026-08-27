@@ -1,7 +1,8 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Stars, Logo } from "../../components/ui";
+import { Stars, Logo, Splash, vibrar, vibrarFesta } from "../../components/ui";
+import Confete from "../../components/Confete";
 import { load, save, concluirPreparo } from "../../lib/store";
 import { syncNow } from "../../lib/sync";
 import { FASE1 } from "../../lib/receitas";
@@ -21,7 +22,7 @@ export default function Preparo() {
     setPasso(Math.min(st.preparoPasso || 0, FASE1.passos.length - 1));
   }, [router]);
 
-  if (!s) return <div className="app-bg min-h-dvh" />;
+  if (!s) return <Splash />;
 
   const total = FASE1.passos.length;
   const p = FASE1.passos[passo];
@@ -31,9 +32,11 @@ export default function Preparo() {
     if (passo + 1 >= total) {
       concluirPreparo(st);
       setPronto(true);
+      vibrarFesta();
       syncNow();
       return;
     }
+    vibrar(12);
     st.preparoPasso = passo + 1;
     setS(save(st));
     setPasso(passo + 1);
@@ -43,6 +46,7 @@ export default function Preparo() {
     return (
       <div className="app-bg relative max-w-md mx-auto min-h-dvh">
         <Stars />
+        <Confete />
         <div className="relative z-10 px-6 pt-16 pb-10 flex flex-col items-center text-center min-h-dvh justify-center">
           <div className="text-[80px] anim-pop">🧪</div>
           <h1 className="text-[28px] font-black tracking-tight mt-6">Conquista desbloqueada!</h1>

@@ -1,6 +1,54 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
+
+// ===== 1.5 — vibração tátil (Android; iPhone ignora sem erro) =====
+export function vibrar(padrao = 18) {
+  try { if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(padrao); } catch {}
+}
+// vibração de conquista/celebração (três toques)
+export function vibrarFesta() { vibrar([28, 60, 28, 60, 48]); }
+
+// ===== 1.1 — tela de carregamento com a lua pulsando =====
+export function Splash() {
+  return (
+    <div className="app-bg relative max-w-md mx-auto min-h-dvh flex flex-col items-center justify-center">
+      <Stars />
+      <div className="splash-lua"><Lua size={54} /></div>
+      <div className="flex items-center gap-2 font-black tracking-tight text-[24px] mt-4">
+        <span>Nocta<span className="text-lilac">Lev</span></span>
+      </div>
+      <div className="flex gap-1.5 mt-5">
+        {[0, 1, 2].map((i) => (
+          <div key={i} className="splash-dot w-2 h-2 rounded-full bg-gold" style={{ animationDelay: `${i * 0.18}s` }} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ===== 1.4 — número que conta até o valor (0 → 127) =====
+export function ContadorNumero({ valor, duracao = 900, decimais = 0, prefixo = "", sufixo = "" }) {
+  const [v, setV] = useState(0);
+  const ref = useRef(null);
+  useEffect(() => {
+    const alvo = Number(valor) || 0;
+    if (alvo === 0) { setV(0); return; }
+    const t0 = performance.now();
+    cancelAnimationFrame(ref.current);
+    function tick(t) {
+      const p = Math.min((t - t0) / duracao, 1);
+      const eased = 1 - Math.pow(1 - p, 3); // desacelera no final
+      setV(alvo * eased);
+      if (p < 1) ref.current = requestAnimationFrame(tick);
+    }
+    ref.current = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(ref.current);
+  }, [valor, duracao]);
+  const txt = decimais > 0 ? v.toFixed(decimais).replace(".", ",") : String(Math.round(v));
+  return <>{prefixo}{txt}{sufixo}</>;
+}
 
 export function Stars() {
   const pts = [
@@ -62,33 +110,50 @@ const TABS = [
   { href: "/bonus", icon: "bonus", label: "Bônus" },
 ];
 
+// ===== 1.7 — TabBar com indicador deslizante + área segura do iPhone =====
 export function TabBar() {
   const path = usePathname();
+  const idx = TABS.findIndex((t) => t.href === path);
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 h-[78px] flex bg-[rgba(8,11,26,.92)] border-t border-[rgba(165,180,252,.14)] backdrop-blur-md max-w-md mx-auto">
-      {TABS.map((t) => {
-        const on = path === t.href;
-        return (
-          <Link
-            key={t.href}
-            href={t.href}
-            className={`flex-1 flex flex-col items-center justify-center gap-[4px] text-[10.5px] font-bold ${
-              on ? "text-gold" : "text-taboff"
-            }`}
-          >
-            <IconTab name={t.icon} on={on} />
-            {t.label}
-          </Link>
-        );
-      })}
+    <nav className="tabbar-safe fixed bottom-0 left-0 right-0 z-40 bg-[rgba(8,11,26,.92)] border-t border-[rgba(165,180,252,.14)] backdrop-blur-md max-w-md mx-auto">
+      <div className="relative h-[78px] flex">
+        {idx >= 0 && (
+          <div className="tab-dot" style={{ left: `calc(${(idx + 0.5) * (100 / TABS.length)}% - 17px)` }} />
+        )}
+        {TABS.map((t) => {
+          const on = path === t.href;
+          return (
+            <Link
+              key={t.href}
+              href={t.href}
+              onClick={() => vibrar(10)}
+              className={`flex-1 flex flex-col items-center justify-center gap-[4px] text-[10.5px] font-bold transition-colors duration-200 ${
+                on ? "text-gold" : "text-taboff"
+              }`}
+            >
+              <span className={on ? "anim-pop" : ""} style={{ animationDuration: "0.3s" }}>
+                <IconTab name={t.icon} on={on} />
+              </span>
+              {t.label}
+            </Link>
+          );
+        })}
+      </div>
     </nav>
   );
 }
 
+// ===== 1.3 — anel que sempre anima do zero até o valor =====
 export function Ring({ pct, label = "SONO", size = 110, color = "#7ee8b2" }) {
   const r = (size - 16) / 2;
   const c = 2 * Math.PI * r;
-  const off = c * (1 - Math.min(pct, 100) / 100);
+  const [mostrado, setMostrado] = useState(0);
+  useEffect(() => {
+    setMostrado(0);
+    const id = requestAnimationFrame(() => requestAnimationFrame(() => setMostrado(Math.min(pct, 100))));
+    return () => cancelAnimationFrame(id);
+  }, [pct]);
+  const off = c * (1 - mostrado / 100);
   return (
     <div className="relative flex-none" style={{ width: size, height: size }}>
       <svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}>
@@ -96,11 +161,13 @@ export function Ring({ pct, label = "SONO", size = 110, color = "#7ee8b2" }) {
         <circle
           cx={size / 2} cy={size / 2} r={r} stroke={color} strokeWidth="10" fill="none"
           strokeLinecap="round" strokeDasharray={c} strokeDashoffset={off}
-          style={{ transition: "stroke-dashoffset 1s ease" }}
+          style={{ transition: "stroke-dashoffset 1.1s cubic-bezier(0.34, 1.2, 0.5, 1)" }}
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <b className="text-[26px] font-black" style={{ color }}>{Math.round(pct)}%</b>
+        <b className="text-[26px] font-black" style={{ color }}>
+          <ContadorNumero valor={Math.round(pct)} duracao={1100} sufixo="%" />
+        </b>
         <span className="text-[10.5px] text-sub font-bold mt-[1px]">{label}</span>
       </div>
     </div>
@@ -136,11 +203,12 @@ export function Sparkline({ pesos, width = 150, height = 84 }) {
   );
 }
 
-export function PageShell({ children, tabbar = true }) {
+// ===== 1.2 — stagger: cada filho entra em cascata (fade + subida) =====
+export function PageShell({ children, tabbar = true, cascata = true }) {
   return (
     <div className="app-bg relative max-w-md mx-auto min-h-dvh overflow-x-hidden">
       <Stars />
-      <div className="relative z-10 px-6 pt-8" style={{ paddingBottom: tabbar ? 110 : 40 }}>
+      <div className={`relative z-10 px-6 pt-8 ${cascata ? "stagger" : ""}`} style={{ paddingBottom: tabbar ? 110 : 40 }}>
         {children}
       </div>
       {tabbar && <TabBar />}
