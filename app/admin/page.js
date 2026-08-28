@@ -12,6 +12,39 @@ function Section({ title, children }) {
   );
 }
 
+// mensagens prontas de WhatsApp (personalizadas com os dados da cliente)
+function msgWhats(tipo, u) {
+  const nome = (u.nome || "").split(" ")[0] || "";
+  const kg = u.kgPerdidos > 0 ? String(u.kgPerdidos).replace(".", ",") : null;
+  if (tipo === "resgate")
+    return `Oi ${nome}! Aqui é do NoctaLev 💛 Senti sua falta no ritual noturno! ${kg ? `Você já tinha eliminado ${kg}kg — ` : ""}que tal retomar hoje à noite? Seu chá leva 5 minutinhos e sua sequência te espera. Qualquer dúvida estou aqui! 🌙`;
+  if (tipo === "vendaF2")
+    return `${nome}, notícia boa! 🎉 Seu corpo respondeu tão bem ao protocolo${kg ? ` (já foram ${kg}kg!)` : ""} que a sua Fase 2 — o Shot Termo-Metabólico — já está LIBERADA no app. É a etapa que acelera a queima. Abre lá e confere 👀🌙`;
+  if (tipo === "incentivo")
+    return `Oi ${nome}! 💛 Você está indo MUITO bem no protocolo${kg ? ` — ${kg}kg já eliminados!` : "!"} Continue com o ritual e os check-ins que uma surpresa boa está chegando no seu app... 👀✨`;
+  if (tipo === "ativacao")
+    return `Oi${nome ? " " + nome : ""}! Aqui é do NoctaLev 💛 Vi que você garantiu seu Protocolo Noturno mas ainda não entrou no app! É só acessar https://noctalev.vercel.app e entrar com este mesmo email da compra. Seu primeiro chá pode ser hoje à noite — me chama se precisar de ajuda! 🌙`;
+  if (tipo === "vendaF3")
+    return `${nome}, você é uma das nossas melhores alunas! 👑 ${kg ? `${kg}kg eliminados e contando... ` : ""}A próxima etapa da sua transformação já está disponível — dá uma olhada no app! 🌙✨`;
+  return "";
+}
+
+function linkWhats(telefone, msg) {
+  const base = telefone ? `https://wa.me/${telefone.replace(/\D/g, "")}` : "https://wa.me/";
+  return `${base}?text=${encodeURIComponent(msg)}`;
+}
+
+function BtnWhats({ telefone, msg, rotulo = "WhatsApp" }) {
+  return (
+    <a href={linkWhats(telefone, msg)} target="_blank" rel="noreferrer"
+      onClick={(e) => e.stopPropagation()}
+      className="flex-none text-[11.5px] font-extrabold px-3 py-2 rounded-full"
+      style={{ background: "rgba(37,211,102,.14)", border: "1px solid rgba(37,211,102,.45)", color: "#25d366" }}>
+      💬 {rotulo}
+    </a>
+  );
+}
+
 export default function Admin() {
   const [autz, setAutz] = useState(false);
   const [pin, setPin] = useState("");
@@ -125,6 +158,9 @@ export default function Admin() {
 
   const TABS = [
     { id: "dash", t: "📊 Dashboard" },
+    { id: "compradoras", t: `🛒 Compradoras${m.nuncaAcessou ? ` (${m.nuncaAcessou}!)` : ""}` },
+    { id: "risco", t: `🚨 Risco${m.emRisco ? ` (${m.emRisco})` : ""}` },
+    { id: "vendas", t: `💰 Vendas${m.oportunidadesF2 ? ` (${m.oportunidadesF2})` : ""}` },
     { id: "lista", t: "👥 Usuárias" },
     { id: "acesso", t: "🔑 Acessos" },
     { id: "config", t: "⚙️ Config" },
@@ -155,22 +191,222 @@ export default function Admin() {
         </div>
 
         {tab === "dash" && (
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
-            {[
-              { l: "Usuárias", v: m.total ?? 0 },
-              { l: "Ativas hoje", v: m.ativasHoje ?? 0 },
-              { l: "Check-ins hoje", v: m.checkinsHoje ?? 0 },
-              { l: "Compradoras", v: m.compradoras ?? 0 },
-              { l: "% preparou receita", v: (m.pctPreparou ?? 0) + "%" },
-              { l: "% chegou dia 7", v: (m.pctDia7 ?? 0) + "%" },
-              { l: "Fase 2 liberadas", v: m.fase2Liberadas ?? 0 },
-            ].map((x, i) => (
-              <div key={i} className="card p-4 text-center">
-                <div className="text-[22px] font-black text-gold">{x.v}</div>
-                <div className="text-[11px] text-sub font-bold mt-1">{x.l}</div>
+          <>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
+              {[
+                { l: "Usuárias", v: m.total ?? 0 },
+                { l: "Ativas hoje", v: m.ativasHoje ?? 0 },
+                { l: "Compradoras", v: m.compradoras ?? 0 },
+                { l: "Nunca acessou 🚨", v: m.nuncaAcessou ?? 0, alerta: (m.nuncaAcessou ?? 0) > 0 },
+                { l: "Em risco (2+ dias)", v: m.emRisco ?? 0, alerta: (m.emRisco ?? 0) > 0 },
+                { l: "F2 liberada s/ pagar", v: m.oportunidadesF2 ?? 0, dinheiro: (m.oportunidadesF2 ?? 0) > 0 },
+                { l: "Conversão Fase 2", v: (m.conversaoF2 ?? 0) + "%" },
+                { l: "Check-ins hoje", v: m.checkinsHoje ?? 0 },
+              ].map((x, i) => (
+                <div key={i} className="card p-4 text-center"
+                  style={x.alerta ? { borderColor: "rgba(229,115,115,.5)" } : x.dinheiro ? { borderColor: "rgba(126,232,178,.5)" } : {}}>
+                  <div className={`text-[22px] font-black ${x.alerta ? "text-[#e57373]" : x.dinheiro ? "text-green" : "text-gold"}`}>{x.v}</div>
+                  <div className="text-[11px] text-sub font-bold mt-1">{x.l}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* FUNIL da jornada */}
+            {dados?.funil && (
+              <Section title="🔻 Funil da jornada — onde estão as clientes">
+                {(() => {
+                  const f = dados.funil;
+                  const etapas = [
+                    { l: "Cadastrou no app", v: f.cadastrou, cor: "#a5b4fc" },
+                    { l: "Preparou a mistura", v: f.preparou, cor: "#a5b4fc" },
+                    { l: "Chegou ao dia 3", v: f.dia3, cor: "#fbd38d" },
+                    { l: "Chegou ao dia 7", v: f.dia7, cor: "#fbd38d" },
+                    { l: "Fase 2 liberada", v: f.fase2Liberada, cor: "#7ee8b2" },
+                    { l: "Fase 2 PAGA 💰", v: f.fase2Paga, cor: "#7ee8b2" },
+                  ];
+                  const max = Math.max(f.cadastrou, 1);
+                  return (
+                    <div className="space-y-2">
+                      {etapas.map((e, i) => {
+                        const ant = i > 0 ? etapas[i - 1].v : null;
+                        const queda = ant != null && ant > 0 ? Math.round(((ant - e.v) / ant) * 100) : null;
+                        return (
+                          <div key={i}>
+                            <div className="flex justify-between text-[11.5px] font-bold">
+                              <span className="text-sub2">{e.l}</span>
+                              <span style={{ color: e.cor }}>{e.v}{queda != null && queda > 0 && <span className="text-[#e57373]"> · −{queda}%</span>}</span>
+                            </div>
+                            <div className="h-[10px] rounded-full mt-1 overflow-hidden" style={{ background: "rgba(255,255,255,.06)" }}>
+                              <div className="h-full rounded-full" style={{ width: `${Math.max(3, (e.v / max) * 100)}%`, background: e.cor, opacity: 0.85 }} />
+                            </div>
+                          </div>
+                        );
+                      })}
+                      <p className="text-[11px] text-sub font-semibold pt-1 leading-relaxed">
+                        A etapa com a maior queda (−%) é onde você deve agir primeiro.
+                      </p>
+                    </div>
+                  );
+                })()}
+              </Section>
+            )}
+
+            {/* ATIVIDADE 14 dias */}
+            {dados?.atividade14 && (
+              <Section title="📈 Check-ins por dia — últimas 2 semanas">
+                {(() => {
+                  const max = Math.max(...dados.atividade14.map((a) => a.n), 1);
+                  return (
+                    <div className="flex items-end gap-1 h-[90px]">
+                      {dados.atividade14.map((a) => (
+                        <div key={a.dia} className="flex-1 flex flex-col items-center justify-end h-full" title={`${a.dia}: ${a.n}`}>
+                          <div className="text-[9px] text-sub font-bold">{a.n || ""}</div>
+                          <div className="w-full rounded-t-[4px]"
+                            style={{ height: `${Math.max(4, (a.n / max) * 62)}px`, background: a.n > 0 ? "linear-gradient(180deg,#fbd38d,#f6ad55)" : "rgba(255,255,255,.07)" }} />
+                          <div className="text-[8.5px] text-sub font-bold mt-1">{a.dia.slice(8)}</div>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
+              </Section>
+            )}
+          </>
+        )}
+
+        {/* 🛒 COMPRADORAS — quem comprou × quem já acessou */}
+        {tab === "compradoras" && (
+          <>
+            <Section title="🛒 Quem comprou × quem já entrou no app">
+              <p className="text-sub text-[12px] font-semibold mb-3 leading-relaxed">
+                Cruzamento automático: lista de compras (Cakto + liberações manuais) contra os perfis criados no app.
+                <b className="text-txt"> Quem nunca acessou aparece primeiro</b> — cada uma delas é risco de reembolso; mande a mensagem de ativação!
+              </p>
+              {(dados?.compradorasStatus || []).length === 0 && (
+                <div className="text-sub text-[13px] font-semibold text-center py-4">Nenhuma compradora registrada ainda.</div>
+              )}
+              <div className="space-y-2">
+                {(dados?.compradorasStatus || []).map((c) => (
+                  <div key={c.email} className="rounded-xl p-3 flex items-center justify-between gap-2"
+                    style={{ background: c.acessou ? "rgba(126,232,178,.05)" : "rgba(229,115,115,.07)", border: `1px solid ${c.acessou ? "rgba(126,232,178,.25)" : "rgba(229,115,115,.4)"}` }}>
+                    <div className="min-w-0">
+                      <div className="text-[13px] font-extrabold truncate">
+                        {c.acessou ? "✅" : "🚨"} {c.nome || c.email}
+                      </div>
+                      <div className="text-[11px] text-sub2 font-semibold mt-0.5 truncate">
+                        {c.email}{c.telefone ? ` · 📱 ${c.telefone}` : ""}
+                      </div>
+                      <div className="text-[11px] font-bold mt-0.5">
+                        {c.acessou
+                          ? <span className="text-green">1º acesso em {c.primeiroAcesso?.slice(0, 10)} · dia {c.dia ?? "—"} do protocolo</span>
+                          : <span className="text-[#e57373]">NUNCA ACESSOU O APP{c.compradaEm ? ` · comprou em ${c.compradaEm.slice(0, 10)}` : ""}</span>}
+                        {c.fase2Paga && <span className="text-gold"> · F2 paga 💰</span>}
+                      </div>
+                    </div>
+                    {!c.acessou && <BtnWhats telefone={c.telefone} msg={msgWhats("ativacao", { nome: c.nome })} rotulo="Ativar" />}
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+            </Section>
+            <p className="text-sub text-[11px] font-semibold mt-2 leading-relaxed px-1">
+              💡 Sem telefone? O botão abre o WhatsApp com a mensagem pronta — é só escolher o contato. Novas compras já chegam com nome e telefone automaticamente.
+            </p>
+          </>
+        )}
+
+        {/* 🚨 RISCO — sumidas há 2+ dias */}
+        {tab === "risco" && (
+          <Section title="🚨 Clientes em risco — sumidas há 2+ dias">
+            <p className="text-sub text-[12px] font-semibold mb-3 leading-relaxed">
+              Já começaram o protocolo mas pararam. Agir aqui = menos reembolso.
+              O botão abre o WhatsApp com uma mensagem carinhosa pronta com o nome dela.
+            </p>
+            {(dados?.emRisco || []).length === 0 && (
+              <div className="text-green text-[13.5px] font-bold text-center py-4">🎉 Ninguém em risco — todas ativas!</div>
+            )}
+            <div className="space-y-2">
+              {(dados?.emRisco || []).map((u) => (
+                <div key={u.id} className="rounded-xl p-3 flex items-center justify-between gap-2"
+                  style={{ background: "rgba(229,115,115,.06)", border: "1px solid rgba(229,115,115,.3)" }}>
+                  <button onClick={() => abrirDetalhe(u.id)} className="min-w-0 text-left flex-1">
+                    <div className="text-[13px] font-extrabold truncate">
+                      {u.diasSemAtividade >= 5 ? "🔴" : "🟠"} {u.nome} <span className="text-sub font-semibold text-[11px]">{u.email}</span>
+                    </div>
+                    <div className="text-[11px] text-sub2 font-semibold mt-0.5">
+                      sumida há <b className="text-[#e57373]">{u.diasSemAtividade} dias</b> · dia {u.dia} · {u.checkins} check-ins
+                      {u.kgPerdidos > 0 && ` · já perdeu ${String(u.kgPerdidos).replace(".", ",")}kg`}
+                    </div>
+                  </button>
+                  <BtnWhats msg={msgWhats("resgate", u)} rotulo="Resgatar" />
+                </div>
+              ))}
+            </div>
+          </Section>
+        )}
+
+        {/* 💰 VENDAS — pipeline de oportunidades */}
+        {tab === "vendas" && (
+          <>
+            <Section title="💰 Prontas para comprar — Fase 2 liberada, NÃO paga">
+              <p className="text-sub text-[12px] font-semibold mb-3 leading-relaxed">
+                Dinheiro na mesa: elas já viram a Fase 2 liberada no app. Um empurrãozinho pessoal fecha a venda.
+              </p>
+              {(dados?.oportunidades?.prontasF2 || []).length === 0 && (
+                <div className="text-sub text-[13px] font-semibold text-center py-3">Nenhuma agora — as próximas aparecem aqui automaticamente.</div>
+              )}
+              <div className="space-y-2">
+                {(dados?.oportunidades?.prontasF2 || []).map((u) => (
+                  <div key={u.id} className="rounded-xl p-3 flex items-center justify-between gap-2"
+                    style={{ background: "rgba(126,232,178,.06)", border: "1px solid rgba(126,232,178,.35)" }}>
+                    <button onClick={() => abrirDetalhe(u.id)} className="min-w-0 text-left flex-1">
+                      <div className="text-[13px] font-extrabold truncate">💎 {u.nome} <span className="text-sub font-semibold text-[11px]">{u.email}</span></div>
+                      <div className="text-[11px] text-sub2 font-semibold mt-0.5">
+                        dia {u.dia} · {u.kgPerdidos > 0 ? `−${String(u.kgPerdidos).replace(".", ",")}kg · ` : ""}
+                        {u.diasSemAtividade <= 1 ? "ativa hoje 🔥" : `vista há ${u.diasSemAtividade}d`}
+                      </div>
+                    </button>
+                    <BtnWhats msg={msgWhats("vendaF2", u)} rotulo="Oferecer" />
+                  </div>
+                ))}
+              </div>
+            </Section>
+
+            <Section title="✨ Quase lá — dia 5+, engajadas, Fase 2 a caminho">
+              {(dados?.oportunidades?.quaseLa || []).length === 0 && (
+                <div className="text-sub text-[13px] font-semibold text-center py-3">Nenhuma no momento.</div>
+              )}
+              <div className="space-y-2">
+                {(dados?.oportunidades?.quaseLa || []).map((u) => (
+                  <div key={u.id} className="rounded-xl p-3 flex items-center justify-between gap-2 bg-white/[.03]"
+                    style={{ border: "1px solid rgba(251,211,141,.25)" }}>
+                    <button onClick={() => abrirDetalhe(u.id)} className="min-w-0 text-left flex-1">
+                      <div className="text-[13px] font-extrabold truncate">🌟 {u.nome}</div>
+                      <div className="text-[11px] text-sub2 font-semibold mt-0.5">dia {u.dia} · {u.checkins} check-ins{u.kgPerdidos > 0 ? ` · −${String(u.kgPerdidos).replace(".", ",")}kg` : ""}</div>
+                    </button>
+                    <BtnWhats msg={msgWhats("incentivo", u)} rotulo="Incentivar" />
+                  </div>
+                ))}
+              </div>
+            </Section>
+
+            <Section title="👑 Candidatas à Fase 3 — já pagaram a Fase 2">
+              {(dados?.oportunidades?.candidatasF3 || []).length === 0 && (
+                <div className="text-sub text-[13px] font-semibold text-center py-3">Nenhuma ainda — quem pagar a Fase 2 aparece aqui.</div>
+              )}
+              <div className="space-y-2">
+                {(dados?.oportunidades?.candidatasF3 || []).map((u) => (
+                  <div key={u.id} className="rounded-xl p-3 flex items-center justify-between gap-2 bg-white/[.03]"
+                    style={{ border: "1px solid rgba(165,180,252,.3)" }}>
+                    <button onClick={() => abrirDetalhe(u.id)} className="min-w-0 text-left flex-1">
+                      <div className="text-[13px] font-extrabold truncate">👑 {u.nome}</div>
+                      <div className="text-[11px] text-sub2 font-semibold mt-0.5">dia {u.dia}{u.kgPerdidos > 0 ? ` · −${String(u.kgPerdidos).replace(".", ",")}kg` : ""} · {u.diasSemAtividade <= 1 ? "ativa 🔥" : `vista há ${u.diasSemAtividade}d`}</div>
+                    </button>
+                    <BtnWhats msg={msgWhats("vendaF3", u)} rotulo="Oferecer F3" />
+                  </div>
+                ))}
+              </div>
+            </Section>
+          </>
         )}
 
         {tab === "lista" && (
@@ -221,6 +457,13 @@ export default function Admin() {
                 <button onClick={() => acao("liberar_fase3")} className="opt-btn py-2.5 text-[12.5px] font-bold">🔓 Liberar Fase 3</button>
                 <button onClick={() => { const d = prompt("Preparo há quantos dias?", "3"); if (d != null) acao("ajustar_dia", { dias: parseInt(d, 10) || 0 }); }}
                   className="opt-btn py-2.5 text-[12.5px] font-bold col-span-2">📅 Ajustar dia do protocolo</button>
+                <button onClick={() => {
+                  const titulo = prompt("Título da notificação:", "NoctaLev 🌙");
+                  if (titulo == null) return;
+                  const texto = prompt("Mensagem:", "Sentimos sua falta! Seu ritual de hoje está esperando por você 🍵");
+                  if (texto == null || !texto.trim()) return;
+                  acao("push", { titulo: titulo.trim() || "NoctaLev 🌙", texto: texto.trim(), url: "/" });
+                }} className="opt-btn py-2.5 text-[12.5px] font-bold col-span-2" style={{ borderColor: "rgba(165,180,252,.4)" }}>🔔 Enviar notificação push</button>
               </div>
             </Section>
 

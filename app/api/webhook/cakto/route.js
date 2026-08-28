@@ -23,6 +23,28 @@ function extrairEmail(item) {
   );
 }
 
+function extrairNome(item) {
+  return (
+    item?.customer?.name ||
+    item?.client?.name ||
+    item?.buyer?.name ||
+    item?.name ||
+    null
+  );
+}
+
+function extrairTelefone(item) {
+  const t = (
+    item?.customer?.phone ||
+    item?.customer?.cellphone ||
+    item?.client?.phone ||
+    item?.buyer?.phone ||
+    item?.phone ||
+    null
+  );
+  return t ? String(t).replace(/[^\d+]/g, "") : null;
+}
+
 function extrairProduto(item) {
   const nome = (
     item?.product?.name ||
@@ -69,12 +91,21 @@ async function processarItem(db, item, evento) {
 
   if (status !== "aprovado") return { acao: "ignorado", email, produto, status };
 
-  // compra aprovada → registra/atualiza compradora
+  // compra aprovada → registra/atualiza compradora (com nome e telefone p/ o admin)
   const patch = { email, atualizado_em: new Date().toISOString() };
+  const nome = extrairNome(item);
+  const telefone = extrairTelefone(item);
+  if (nome) patch.nome = nome;
+  if (telefone) patch.telefone = telefone;
   if (produto === "fase2") patch.fase2_paga = true;
   if (produto === "fase3") patch.fase3_paga = true;
   if (produto === "fase1") patch.produto = "fase1";
-  await db.from("compradoras").upsert(patch, { onConflict: "email" });
+  const { error: eUp } = await db.from("compradoras").upsert(patch, { onConflict: "email" });
+  if (eUp) {
+    // colunas nome/telefone ainda não existem → salva sem elas (nunca perde a venda)
+    delete patch.nome; delete patch.telefone;
+    await db.from("compradoras").upsert(patch, { onConflict: "email" });
+  }
 
   // se a usuária já tem perfil, libera a fase imediatamente
   if (produto === "fase2" || produto === "fase3") {
