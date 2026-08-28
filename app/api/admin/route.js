@@ -56,13 +56,14 @@ export async function GET(req) {
     });
   }
 
-  // lista (dashboard)
+  // lista (dashboard + funil + risco + vendas + compradoras×acesso)
   const hoje = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date());
-  const [{ data: perfis }, { data: cksHoje }, { data: todosCks }, { data: compradoras }] = await Promise.all([
+  const [{ data: perfis }, { data: cksHoje }, { data: todosCks }, { data: compradoras }, { data: todosRituais }] = await Promise.all([
     db.from("profiles").select("*").order("criado_em", { ascending: false }),
     db.from("checkins").select("user_id").eq("data", hoje),
     db.from("checkins").select("user_id, data, peso"),
     db.from("compradoras").select("*"),
+    db.from("rituais").select("user_id, data"),
   ]);
 
   // separa contas de teste (ficam fora de TUDO: lista, métricas e CSV)
@@ -71,15 +72,25 @@ export async function GET(req) {
   const cksHojeReais = (cksHoje || []).filter((c) => !idsTeste.has(c.user_id));
   const todosCksReais = (todosCks || []).filter((c) => !idsTeste.has(c.user_id));
   const compradorasReais = (compradoras || []).filter((c) => !ehTeste(c.email));
+  const rituaisReais = (todosRituais || []).filter((r) => !idsTeste.has(r.user_id));
 
   const porUser = {};
   todosCksReais.forEach((c) => {
-    porUser[c.user_id] = porUser[c.user_id] || { n: 0, ultimo: null, ultimoPeso: null };
+    porUser[c.user_id] = porUser[c.user_id] || { n: 0, ultimo: null, ultimoPeso: null, primeiroPeso: null, primeiroData: null };
     porUser[c.user_id].n++;
     if (!porUser[c.user_id].ultimo || c.data > porUser[c.user_id].ultimo) {
       porUser[c.user_id].ultimo = c.data;
       if (c.peso != null) porUser[c.user_id].ultimoPeso = Number(c.peso);
     }
+    if (c.peso != null && (!porUser[c.user_id].primeiroData || c.data < porUser[c.user_id].primeiroData)) {
+      porUser[c.user_id].primeiroData = c.data;
+      porUser[c.user_id].primeiroPeso = Number(c.peso);
+    }
+  });
+  // última atividade REAL = último check-in OU último ritual (o que for mais recente)
+  const ultRitual = {};
+  rituaisReais.forEach((r) => {
+    if (!ultRitual[r.user_id] || r.data > ultRitual[r.user_id]) ultRitual[r.user_id] = r.data;
   });
 
   const usuarias = perfisReais.map((p) => {
@@ -87,31 +98,116 @@ export async function GET(req) {
     const diaProt = p.receita_preparada_em
       ? Math.max(1, Math.round((new Date(hoje) - new Date(p.receita_preparada_em.slice(0, 10))) / 86400000) + 1)
       : 0;
+    const ultimaAtividade = [st.ultimo, ultRitual[p.id], p.criado_em?.slice(0, 10)]
+      .filter(Boolean).sort().pop() || null;
+    const diasSemAtividade = ultimaAtividade
+      ? Math.round((new Date(hoje) - new Date(ultimaAtividade)) / 86400000)
+      : 999;
+    const kgPerdidos = p.peso_inicial != null && st.ultimoPeso != null
+      ? Math.max(0, Number(p.peso_inicial) - st.ultimoPeso) : 0;
     return {
       id: p.id, nome: p.nome, email: p.email,
       dia: diaProt, fase: p.fase_atual || 1,
       checkins: st.n, ultimoCheckin: st.ultimo,
       pesoInicial: p.peso_inicial != null ? Number(p.peso_inicial) : null,
       pesoAtual: st.ultimoPeso,
+      kgPerdidos: Math.round(kgPerdidos * 10) / 10,
       pontos: p.pontos || 0,
       preparou: !!p.receita_preparada_em,
       fase2Liberada: !!p.fase2_liberada_em,
       fase2Paga: !!p.fase2_paga,
-      inativa: !st.ultimo || (new Date(hoje) - new Date(st.ultimo)) / 86400000 >= 3,
+      fase3Liberada: !!p.fase3_liberada_em,
+      fase3Paga: !!p.fase3_paga,
+      ultimaAtividade, diasSemAtividade,
+      // score de engajamento: 🔥 ativa (0-1d) · 💛 morna (2-3d) · 🚨 fria (4+d)
+      engajamento: diasSemAtividade <= 1 ? "alta" : diasSemAtividade <= 3 ? "media" : "fria",
+      inativa: diasSemAtividade >= 3,
       criadoEm: p.criado_em,
     };
   });
 
+  // ===== FUNIL da jornada =====
+  const nTotal = usuarias.length;
+  const funil = {
+    cadastrou: nTotal,
+    preparou: usuarias.filter((u) => u.preparou).length,
+    dia3: usuarias.filter((u) => u.dia >= 3).length,
+    dia7: usuarias.filter((u) => u.dia >= 7).length,
+    fase2Liberada: usuarias.filter((u) => u.fase2Liberada).length,
+    fase2Paga: usuarias.filter((u) => u.fase2Paga).length,
+  };
+
+  // ===== ATIVIDADE dos últimos 14 dias (check-ins por dia) =====
+  const atividade14 = [];
+  for (let i = 13; i >= 0; i--) {
+    const d = new Date(hoje + "T12:00:00Z");
+    d.setUTCDate(d.getUTCDate() - i);
+    const dia = d.toISOString().slice(0, 10);
+    atividade14.push({ dia, n: todosCksReais.filter((c) => c.data === dia).length });
+  }
+
+  // ===== COMPRADORAS × PRIMEIRO ACESSO =====
+  // cruza a lista de quem comprou (Cakto/manual) com quem tem perfil no app
+  const emailsComPerfil = new Map(perfisReais.map((p) => [String(p.email || "").toLowerCase(), p]));
+  const compradorasStatus = compradorasReais.map((c) => {
+    const em = String(c.email || "").toLowerCase();
+    const prof = emailsComPerfil.get(em);
+    const u = prof ? usuarias.find((x) => x.id === prof.id) : null;
+    return {
+      email: em,
+      nome: c.nome || u?.nome || null,
+      telefone: c.telefone || null,
+      compradaEm: c.criado_em || null,
+      fase2Paga: !!c.fase2_paga,
+      fase3Paga: !!c.fase3_paga,
+      acessou: !!prof,                         // criou perfil = fez o 1º acesso
+      primeiroAcesso: prof?.criado_em || null,
+      dia: u?.dia ?? null,
+      diasSemAtividade: u?.diasSemAtividade ?? null,
+      userId: prof?.id || null,
+    };
+  }).sort((a, b) => Number(a.acessou) - Number(b.acessou)); // nunca acessou primeiro
+
+  const nuncaAcessou = compradorasStatus.filter((c) => !c.acessou).length;
+
+  // ===== VENDAS: oportunidades =====
+  const oportunidades = {
+    // dinheiro na mesa: Fase 2 liberada mas ainda não paga
+    prontasF2: usuarias.filter((u) => u.fase2Liberada && !u.fase2Paga)
+      .sort((a, b) => a.diasSemAtividade - b.diasSemAtividade),
+    // quase lá: 5+ dias de protocolo, ainda sem Fase 2 liberada, ativas
+    quaseLa: usuarias.filter((u) => !u.fase2Liberada && u.dia >= 5 && u.diasSemAtividade <= 3)
+      .sort((a, b) => b.dia - a.dia),
+    // candidatas à Fase 3: pagaram F2 e seguem ativas
+    candidatasF3: usuarias.filter((u) => u.fase2Paga && !u.fase3Paga)
+      .sort((a, b) => a.diasSemAtividade - b.diasSemAtividade),
+  };
+
+  // ===== RISCO: sumidas há 2+ dias (mas que já começaram) =====
+  const emRisco = usuarias
+    .filter((u) => u.preparou && u.diasSemAtividade >= 2 && u.diasSemAtividade < 60)
+    .sort((a, b) => b.diasSemAtividade - a.diasSemAtividade);
+
   return NextResponse.json({
     metricas: {
-      total: usuarias.length,
+      total: nTotal,
       ativasHoje: new Set(cksHojeReais.map((c) => c.user_id)).size,
       checkinsHoje: cksHojeReais.length,
-      pctPreparou: usuarias.length ? Math.round((usuarias.filter((u) => u.preparou).length / usuarias.length) * 100) : 0,
-      pctDia7: usuarias.length ? Math.round((usuarias.filter((u) => u.dia >= 7).length / usuarias.length) * 100) : 0,
-      fase2Liberadas: usuarias.filter((u) => u.fase2Liberada).length,
+      pctPreparou: nTotal ? Math.round((funil.preparou / nTotal) * 100) : 0,
+      pctDia7: nTotal ? Math.round((funil.dia7 / nTotal) * 100) : 0,
+      fase2Liberadas: funil.fase2Liberada,
       compradoras: compradorasReais.length,
+      nuncaAcessou,
+      emRisco: emRisco.length,
+      oportunidadesF2: oportunidades.prontasF2.length,
+      // taxa de conversão Fase 2 (liberadas → pagas)
+      conversaoF2: funil.fase2Liberada ? Math.round((funil.fase2Paga / funil.fase2Liberada) * 100) : 0,
     },
+    funil,
+    atividade14,
+    compradorasStatus,
+    oportunidades,
+    emRisco,
     usuarias,
   });
 }
@@ -133,6 +229,31 @@ export async function POST(req) {
     await db.from("profiles").update({ receita_preparada_em: dt.toISOString() }).eq("id", id);
   }
   else if (acao === "nota") await db.from("notas_admin").insert({ user_id: id, texto: body.texto });
+  else if (acao === "push") {
+    // 📣 push individual: envia notificação para todos os aparelhos da usuária
+    const VAPID_PUBLIC = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+    const VAPID_PRIVATE = process.env.VAPID_PRIVATE_KEY;
+    if (!VAPID_PRIVATE) return NextResponse.json({ error: "VAPID não configurado" }, { status: 500 });
+    const webpush = (await import("web-push")).default;
+    webpush.setVapidDetails("mailto:suporte@noctalev.app", VAPID_PUBLIC, VAPID_PRIVATE);
+    const { data: subs } = await db.from("push_subscriptions").select("*").eq("user_id", id).eq("ativo", true);
+    if (!subs?.length) return NextResponse.json({ error: "ela não ativou notificações" }, { status: 404 });
+    let enviadas = 0;
+    for (const s of subs) {
+      try {
+        await webpush.sendNotification(
+          { endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } },
+          JSON.stringify({ title: body.titulo || "🌙 NoctaLev", body: body.texto || "", url: body.url || "/" })
+        );
+        enviadas++;
+      } catch (e) {
+        if (e?.statusCode === 410 || e?.statusCode === 404) {
+          await db.from("push_subscriptions").delete().eq("endpoint", s.endpoint);
+        }
+      }
+    }
+    return NextResponse.json({ ok: true, enviadas });
+  }
   else if (acao === "add_compradora") await db.from("compradoras").upsert({ email: body.email?.trim().toLowerCase() }, { onConflict: "email" });
   else if (acao === "salvar_config") {
     // body.config = { progressao: {...}, checkout: {...}, suporte: {...} }
