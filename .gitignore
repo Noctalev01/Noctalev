@@ -2,3 +2,6 @@ node_modules/
 .next/
 .env*.local
 .fotos_raw/
+
+# pasta de exportacao (nao vai para o deploy)
+export-oferta/
