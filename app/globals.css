@@ -266,3 +266,22 @@ body.texto-grande { zoom: 1.14; }
 @media (prefers-reduced-motion: reduce) {
   .cta-pulso { animation: none !important; }
 }
+
+/* carrossel de antes/depois — desliza no dedo, com "imã" em cada foto */
+.carrossel-ab {
+  display: flex;
+  gap: 14px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.carrossel-ab::-webkit-scrollbar { display: none; }
+.slide-ab {
+  flex: 0 0 78%;
+  scroll-snap-align: center;
+  margin: 0;
+}
+@media (min-width: 640px) {
+  .slide-ab { flex-basis: 44%; }
+}

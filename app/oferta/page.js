@@ -9,6 +9,18 @@ import { useEffect, useRef, useState } from "react";
 const CHECKOUT = "https://pay.cakto.com.br/keibt5s_1054022";
 const PIXEL_ID = "3045648935777848";
 
+// ---- antes e depois (fotos hospedadas no próprio site, em WebP leve) ----
+const RESULTADOS = [
+  { img: "antes-depois-01.webp", nome: "Luciana, 46", cidade: "Campinas – SP", inicio: "14 de julho" },
+  { img: "antes-depois-02.webp", nome: "Rosângela, 51", cidade: "Belo Horizonte – MG", inicio: "3 de agosto" },
+  { img: "antes-depois-03.webp", nome: "Cláudia, 44", cidade: "Curitiba – PR", inicio: "21 de julho" },
+  { img: "antes-depois-04.webp", nome: "Ivone, 58", cidade: "Goiânia – GO", inicio: "8 de agosto" },
+  { img: "antes-depois-05.webp", nome: "Simone, 49", cidade: "Salvador – BA", inicio: "28 de julho" },
+  { img: "antes-depois-06.webp", nome: "Vera, 55", cidade: "Porto Alegre – RS", inicio: "11 de agosto" },
+  { img: "antes-depois-07.webp", nome: "Márcia, 47", cidade: "Fortaleza – CE", inicio: "17 de julho" },
+  { img: "antes-depois-08.webp", nome: "Adriana, 52", cidade: "São José dos Campos – SP", inicio: "5 de agosto" },
+];
+
 // ---- utm: preserva os parâmetros da URL ao mandar pro checkout ----
 function urlCheckout() {
   try {
@@ -259,7 +271,7 @@ export default function Oferta() {
           <div className="mt-6">
             <Cta>QUERO COMEÇAR HOJE →</Cta>
             <p className="text-center text-[13px] font-bold text-sub2 mt-2.5">
-              Acesso imediato • Garantia de 7 dias • 12x de R$ 4,90
+              Acesso imediato • Garantia de 7 dias • 11x de R$ 5,43
             </p>
           </div>
 
@@ -359,24 +371,49 @@ export default function Oferta() {
           </div>
         </section>
 
-        {/* ============ 6. RESULTADOS ============ */}
+        {/* ============ 6. RESULTADOS — carrossel antes/depois ============ */}
         <section className="mt-12">
           <h2 className="text-[22px] font-black text-center leading-tight">
-            Mulheres reais, <span className="text-gold">noites reais</span>
+            Veja os resultados de mulheres que viveram a{" "}
+            <span className="text-gold">transformação de corpo e de vida</span> com o ritual
           </h2>
-          <div className="space-y-4 mt-5">
-            {[
-              ["Adriana, 52", "\u201cEu não lembrava mais o que era dormir a noite inteira. Hoje meu ritual é o meu momento.\u201d"],
-              ["Márcia, 47", "\u201cO que mudou tudo pra mim foi ter o passo a passo no celular. Sem pensar, só seguir.\u201d"],
-            ].map(([nome, frase]) => (
-              <div key={nome} className="card p-5">
-                <div className="flex items-center gap-3 mb-2.5">
-                  <div className="w-11 h-11 rounded-full bg-lilac/20 flex items-center justify-center text-[18px]">🌷</div>
-                  <div className="text-[15px] font-black">{nome}</div>
+          <p className="text-center text-[14px] font-semibold text-sub2 mt-2">
+            28 noites depois, elas mesmas mandaram as fotos 💛
+          </p>
+
+          <div className="carrossel-ab mt-6 -mx-5 px-5">
+            {RESULTADOS.map((r) => (
+              <figure key={r.img} className="slide-ab">
+                <div className="card !rounded-2xl overflow-hidden !p-0">
+                  <img
+                    src={`/resultados/${r.img}`}
+                    alt={`Antes e depois de ${r.nome}`}
+                    loading="lazy"
+                    width="440"
+                    height="440"
+                    className="w-full aspect-square object-cover"
+                  />
+                  <figcaption className="px-4 py-3">
+                    <div className="text-[15px] font-black">{r.nome}</div>
+                    <div className="text-[12.5px] font-bold text-sub2 mt-0.5">
+                      📍 {r.cidade} · começou em {r.inicio}
+                    </div>
+                  </figcaption>
                 </div>
-                <p className="text-[16px] font-semibold text-sub2 leading-relaxed italic">{frase}</p>
-              </div>
+              </figure>
             ))}
+          </div>
+          <div className="flex justify-center gap-1.5 mt-3">
+            {RESULTADOS.map((r, i) => (
+              <div key={i} className="w-1.5 h-1.5 rounded-full bg-lilac/30" />
+            ))}
+          </div>
+          <p className="text-center text-[13px] font-bold text-sub2 mt-2">
+            ← arraste para o lado e veja todas →
+          </p>
+
+          <div className="mt-5">
+            <Cta pulso={false}>TAMBÉM QUERO TRANSFORMAR MEU CORPO! →</Cta>
           </div>
           <p className="text-center text-[12px] font-semibold text-sub mt-3">
             Resultados variam de pessoa para pessoa.
@@ -414,7 +451,7 @@ export default function Oferta() {
             <div className="mt-3 text-[17px] font-bold text-sub line-through">De R$ 97</div>
             <div className="text-[15px] font-bold text-sub2 mt-2">por apenas</div>
             <div className="text-[42px] leading-none font-black text-gold mt-1">
-              12x <span className="text-[52px]">R$ 4,90</span>
+              11x <span className="text-[52px]">R$ 5,43</span>
             </div>
             <div className="text-[15px] font-bold text-sub2 mt-2">ou R$ 47,90 à vista</div>
             <p className="text-[14.5px] font-semibold text-sub2 mt-4 leading-snug">
@@ -486,7 +523,7 @@ export default function Oferta() {
           <div className="mt-6">
             <Cta>QUERO COMEÇAR HOJE →</Cta>
             <p className="text-[13px] font-bold text-sub2 mt-2.5">
-              Acesso imediato • Garantia de 7 dias • 12x de R$ 4,90
+              Acesso imediato • Garantia de 7 dias • 11x de R$ 5,43
             </p>
           </div>
           <Selos />
@@ -502,7 +539,7 @@ export default function Oferta() {
       <div className={`sticky-oferta ${sticky ? "visivel" : ""}`}>
         <div className="max-w-md mx-auto">
           <Cta pulso={false} mini>
-            Garantir meu acesso — 12x R$ 4,90
+            Garantir meu acesso — 11x R$ 5,43
           </Cta>
         </div>
       </div>
