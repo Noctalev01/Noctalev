@@ -251,7 +251,18 @@ export default function Oferta() {
         {/* ============ 1. HERO ============ */}
         <section ref={heroRef} className="pt-8">
           <div className="text-center">
-            <div className="eyebrow !text-gold">🌙 NoctaLev</div>
+            <div className="flex items-center justify-center gap-2.5">
+              <img
+                src="/resultados/logo-noctalev.webp"
+                alt="NoctaLev"
+                width="44"
+                height="44"
+                className="w-11 h-11 rounded-2xl shadow-lg"
+              />
+              <span className="text-[19px] font-black tracking-wide">
+                Nocta<span className="text-gold">Lev</span>
+              </span>
+            </div>
             <h1 className="text-[27px] leading-[1.18] font-black mt-3">
               O Ritual Noturno de 10 Minutos está pronto para a sua{" "}
               <span className="text-gold">primeira noite</span> — direto no seu celular
@@ -281,16 +292,26 @@ export default function Oferta() {
 
         {/* ============ 3. O QUE É ============ */}
         <section className="mt-12">
-          <div className="card p-5">
-            <p className="text-[17px] font-semibold leading-relaxed">
-              Depois dos 40, é <b className="text-gold">durante o sono</b> que o seu corpo
-              decide se queima ou acumula gordura.
-            </p>
-            <p className="text-[17px] font-semibold leading-relaxed mt-3">
-              O NoctaLev é um ritual de <b>10 minutos por noite</b>, com uma bebida simples
-              de ingredientes de mercado (<b className="text-green">menos de R$ 2 por noite</b>)
-              — tudo guiado pelo app, noite por noite.
-            </p>
+          <div className="card overflow-hidden !p-0">
+            <img
+              src="/resultados/mulher-usando-app.webp"
+              alt="Mulher fazendo seu ritual noturno com o app NoctaLev"
+              loading="lazy"
+              width="880"
+              height="657"
+              className="w-full object-cover"
+            />
+            <div className="p-5">
+              <p className="text-[17px] font-semibold leading-relaxed">
+                Depois dos 40, é <b className="text-gold">durante o sono</b> que o seu corpo
+                decide se queima ou acumula gordura.
+              </p>
+              <p className="text-[17px] font-semibold leading-relaxed mt-3">
+                O NoctaLev é um ritual de <b>10 minutos por noite</b>, com uma bebida simples
+                de ingredientes de mercado (<b className="text-green">menos de R$ 2 por noite</b>)
+                — tudo guiado pelo app, noite por noite.
+              </p>
+            </div>
           </div>
         </section>
 
@@ -331,7 +352,7 @@ export default function Oferta() {
           </div>
         </section>
 
-        {/* ============ 5. PARA QUEM É / NÃO É ============ */}
+        {/* ============ 5. PARA QUEM É ============ */}
         <section className="mt-12">
           <h2 className="text-[22px] font-black text-center leading-tight">
             Isso é <span className="text-gold">para você</span>?
@@ -353,21 +374,38 @@ export default function Oferta() {
               ))}
             </ul>
           </div>
+        </section>
 
-          <div className="card p-5 mt-4" style={{ borderColor: "rgba(248,113,113,.25)" }}>
-            <div className="text-[15px] font-black text-[#fca5a5] mb-3">❌ NÃO é para você que…</div>
-            <ul className="space-y-2.5">
+        {/* ============ 5b. COMPETIÇÃO — vale-compras ============ */}
+        <section className="mt-12">
+          <div className="card p-6 text-center border-2" style={{ borderColor: "rgba(251,211,141,.45)", background: "linear-gradient(160deg, rgba(251,211,141,.08), rgba(255,255,255,.03))" }}>
+            <div className="text-[44px]">🏆</div>
+            <h2 className="text-[22px] font-black leading-tight mt-1">
+              Desafio das 28 Noites: <span className="text-gold">até R$ 1.000 em vale-compras</span>
+            </h2>
+            <p className="text-[16px] font-semibold text-sub2 leading-relaxed mt-3">
+              Dentro do app, você entra em uma <b className="text-txt">competição entre as inscritas</b>:
+              cada noite do ritual concluída vale pontos no ranking.
+            </p>
+            <p className="text-[16px] font-semibold text-sub2 leading-relaxed mt-3">
+              As mais dedicadas de cada turma concorrem a <b className="text-gold">prêmios de até
+              R$ 1.000 em vale-compras</b> — ou seja, cuidar de você ainda pode te premiar. 💛
+            </p>
+            <div className="grid grid-cols-3 gap-2 mt-5">
               {[
-                "busca fórmula mágica sem fazer nada",
-                "tem menos de 30 anos",
-                "procura remédio ou pílula — não é suplemento, é um método natural",
-              ].map((t) => (
-                <li key={t} className="flex gap-2.5 text-[16px] font-semibold text-sub2 leading-snug">
-                  <span className="text-[#fca5a5] shrink-0">✕</span>
-                  <span>{t}</span>
-                </li>
+                ["🌙", "Fez a noite,", "ganhou ponto"],
+                ["📊", "Ranking da", "sua turma"],
+                ["🎁", "Prêmios até", "R$ 1.000"],
+              ].map(([ic, l1, l2]) => (
+                <div key={l2} className="card !rounded-2xl px-1 py-3">
+                  <div className="text-[22px]">{ic}</div>
+                  <div className="text-[11.5px] font-bold text-sub2 mt-1 leading-tight">{l1}<br />{l2}</div>
+                </div>
               ))}
-            </ul>
+            </div>
+            <p className="text-[11px] font-semibold text-sub mt-4">
+              Consulte o regulamento do desafio dentro do app.
+            </p>
           </div>
         </section>
 
@@ -433,6 +471,7 @@ export default function Oferta() {
                 ["🛒", "Lista de compras semanal pronta — economiza tempo e dinheiro"],
                 ["📖", "Guia \u201cPor que seu corpo trava depois dos 40\u201d"],
                 ["🔔", "Lembretes noturnos para nunca perder uma noite"],
+                ["🏆", "Desafio das 28 Noites — concorra a até R$ 1.000 em vale-compras"],
                 ["♾️", "Acesso vitalício, direto no navegador do celular — sem baixar nada da loja, sem senha complicada"],
               ].map(([ic, t]) => (
                 <li key={t} className="flex gap-3 items-start">
