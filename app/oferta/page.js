@@ -62,7 +62,7 @@ function Selos() {
       {[
         ["🔒", "Compra segura"],
         ["⚡", "Acesso imediato"],
-        ["✅", "Garantia 7 dias"],
+        ["✅", "Garantia 30 dias"],
       ].map(([ic, t]) => (
         <div key={t} className="flex-1 card !rounded-2xl px-1 py-3 text-center">
           <div className="text-[20px]">{ic}</div>
@@ -212,6 +212,35 @@ export default function Oferta() {
   const [sticky, setSticky] = useState(false);
   const [faqAberta, setFaqAberta] = useState(-1);
 
+  // reembolso direto na página (prova da garantia)
+  const [reembolsoEmail, setReembolsoEmail] = useState("");
+  const [reembolsoIndo, setReembolsoIndo] = useState(false);
+  const [reembolsoOk, setReembolsoOk] = useState(false);
+  const [reembolsoErro, setReembolsoErro] = useState("");
+
+  async function pedirReembolso() {
+    const email = reembolsoEmail.trim().toLowerCase();
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+      setReembolsoErro("Digite o email que você usou na compra.");
+      return;
+    }
+    setReembolsoIndo(true);
+    setReembolsoErro("");
+    try {
+      const r = await fetch("/api/reembolso", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      const j = await r.json();
+      if (j.ok) setReembolsoOk(true);
+      else setReembolsoErro(j.motivo || "Não deu certo agora. Tente de novo ou escreva para suporte@noctalev.app.");
+    } catch {
+      setReembolsoErro("Sem conexão. Tente de novo em instantes.");
+    }
+    setReembolsoIndo(false);
+  }
+
   // pixel meta: PageView + ViewContent no carregamento
   useEffect(() => {
     try {
@@ -282,7 +311,7 @@ export default function Oferta() {
           <div className="mt-6">
             <Cta>QUERO COMEÇAR HOJE →</Cta>
             <p className="text-center text-[13px] font-bold text-sub2 mt-2.5">
-              Acesso imediato • Garantia de 7 dias • 11x de R$ 5,43
+              Acesso imediato • Garantia de 30 dias • 11x de R$ 5,43
             </p>
           </div>
 
@@ -505,19 +534,91 @@ export default function Oferta() {
           </div>
         </section>
 
-        {/* ============ 9. GARANTIA ============ */}
+        {/* ============ 8b. CERTIFICAÇÃO DO DOUTOR ============ */}
+        <section className="mt-12">
+          <div className="card overflow-hidden !p-0" style={{ borderColor: "rgba(165,180,252,.28)" }}>
+            <img
+              src="/resultados/dr-noctalev.webp"
+              alt="Médico responsável pela revisão do método NoctaLev"
+              loading="lazy"
+              width="640"
+              height="800"
+              className="w-full object-cover max-h-[420px] object-top"
+            />
+            <div className="p-5">
+              <div className="eyebrow !text-lilac">Revisão clínica</div>
+              <h3 className="text-[20px] font-black leading-tight mt-1">
+                Um método <span className="text-gold">revisado por médico</span>, não uma moda de internet
+              </h3>
+              <p className="text-[16px] font-semibold text-sub2 leading-relaxed mt-3">
+                Cada noite do ritual NoctaLev foi revisada por um médico especialista em sono e
+                metabolismo, garantindo que o passo a passo é <b className="text-txt">seguro,
+                natural e adequado para mulheres depois dos 40</b>.
+              </p>
+              <div className="flex items-center gap-2 mt-4">
+                <span className="text-[20px]">⚕️</span>
+                <span className="text-[13.5px] font-bold text-sub2">
+                  Sem remédios, sem fórmulas — apenas o que a ciência do sono já comprova.
+                </span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ============ 9. GARANTIA + REEMBOLSO NA PÁGINA ============ */}
         <section className="mt-12">
           <div className="card p-6 text-center" style={{ borderColor: "rgba(126,232,178,.3)" }}>
             <div className="text-[52px]">🛡️</div>
-            <h3 className="text-[20px] font-black mt-2">Garantia incondicional de 7 dias</h3>
+            <h3 className="text-[20px] font-black mt-2">Garantia incondicional de 30 dias</h3>
             <p className="text-[16px] font-semibold text-sub2 leading-relaxed mt-3">
               Entre no app, faça suas primeiras noites do ritual. Se não sentir diferença
-              no seu sono na primeira semana, clique em reembolso e devolvemos{" "}
+              no seu sono, peça o reembolso e devolvemos{" "}
               <b className="text-green">100% do valor</b>.
             </p>
             <p className="text-[16px] font-bold mt-3">
               Sem perguntas, sem burocracia. O risco é todo nosso.
             </p>
+
+            {/* prova viva: o pedido de reembolso fica AQUI MESMO na página */}
+            <div className="mt-6 rounded-2xl bg-white/[.05] border border-white/10 p-4 text-left">
+              <div className="text-[14px] font-black text-center">
+                Duvida? O botão de reembolso fica aqui mesmo, à vista 👇
+              </div>
+              <p className="text-[13px] font-semibold text-sub2 text-center mt-1.5 leading-snug">
+                Já comprou e quer devolver? Digite o email da compra e pronto. Simples assim.
+              </p>
+              {reembolsoOk ? (
+                <div className="mt-3 rounded-xl bg-green/15 border border-green/30 p-3.5 text-center">
+                  <div className="text-[15px] font-black text-green">✅ Pedido recebido!</div>
+                  <p className="text-[13px] font-semibold text-sub2 mt-1 leading-snug">
+                    Seu reembolso será processado e devolvido pelo mesmo meio de pagamento.
+                    Você recebe a confirmação no seu email. 💛
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <input
+                    type="email"
+                    inputMode="email"
+                    autoComplete="email"
+                    placeholder="Email usado na compra"
+                    value={reembolsoEmail}
+                    onChange={(e) => { setReembolsoEmail(e.target.value); setReembolsoErro(""); }}
+                    className="w-full mt-3 rounded-xl bg-white/[.06] border border-white/15 px-4 py-3.5 text-[16px] font-semibold text-txt placeholder:text-sub outline-none focus:border-lilac/50"
+                  />
+                  {reembolsoErro && (
+                    <p className="text-[12.5px] font-bold text-[#fca5a5] mt-2 text-center">{reembolsoErro}</p>
+                  )}
+                  <button
+                    onClick={pedirReembolso}
+                    disabled={reembolsoIndo}
+                    className="w-full mt-3 rounded-xl border border-white/20 bg-white/[.07] py-3.5 text-[15px] font-black text-txt active:scale-[.98] transition-transform disabled:opacity-60"
+                  >
+                    {reembolsoIndo ? "Enviando…" : "Pedir meu reembolso"}
+                  </button>
+                </>
+              )}
+            </div>
           </div>
         </section>
 
@@ -531,7 +632,7 @@ export default function Oferta() {
               ["Funciona para a minha idade?", "O NoctaLev foi feito especialmente para mulheres depois dos 40 — e funciona também depois dos 60."],
               ["Preciso fazer dieta ou academia junto?", "Não. O ritual noturno é o método. Você não precisa mudar sua rotina do dia."],
               ["É uma assinatura? Vou pagar todo mês?", "Não! É pagamento único, com acesso vitalício. Você paga uma vez e o app é seu."],
-              ["E se eu não gostar?", "Você tem 7 dias de garantia incondicional. Não gostou? Reembolso de 100% em 1 clique, sem perguntas."],
+              ["E se eu não gostar?", "Você tem 30 dias de garantia incondicional. Não gostou? O pedido de reembolso fica aqui nesta página mesmo: digite o email da compra e pronto — 100% de volta, sem perguntas."],
             ].map(([q, a], i) => (
               <div key={q} className="card overflow-hidden">
                 <button
@@ -562,7 +663,7 @@ export default function Oferta() {
           <div className="mt-6">
             <Cta>QUERO COMEÇAR HOJE →</Cta>
             <p className="text-[13px] font-bold text-sub2 mt-2.5">
-              Acesso imediato • Garantia de 7 dias • 11x de R$ 5,43
+              Acesso imediato • Garantia de 30 dias • 11x de R$ 5,43
             </p>
           </div>
           <Selos />
