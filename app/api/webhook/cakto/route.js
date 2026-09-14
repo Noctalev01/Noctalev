@@ -46,12 +46,17 @@ function extrairTelefone(item) {
 }
 
 function extrairProduto(item) {
+  // ids de oferta que identificam o Studio (upsell 1-click da Cakto)
+  const offerId = String(
+    item?.offer?.id || item?.offer_id || item?.offer?.code || item?.checkoutUrl || item?.checkout_url || ""
+  ).toLowerCase();
   const nome = (
     item?.product?.name ||
     item?.offer?.name ||
     item?.product_name ||
     ""
   ).toLowerCase();
+  if (nome.includes("studio") || offerId.includes("35gq5du")) return "studio";
   if (nome.includes("fase 3") || nome.includes("fase3")) return "fase3";
   if (nome.includes("fase 2") || nome.includes("fase2")) return "fase2";
   return "fase1";
@@ -76,6 +81,15 @@ async function processarItem(db, item, evento) {
   const status = extrairStatus(item, evento);
 
   if (status === "reembolso") {
+    if (produto === "studio") {
+      // remove o acesso ao Studio (tabela + marcador de fallback)
+      await db.from("configuracoes").upsert(
+        { chave: `studio:${email}`, valor: "0", atualizado_em: new Date().toISOString() },
+        { onConflict: "chave" }
+      );
+      try { await db.from("compradoras").update({ studio_pago: false, atualizado_em: new Date().toISOString() }).eq("email", email); } catch {}
+      return { acao: "reembolso", email, produto };
+    }
     if (produto === "fase1") {
       await db.from("compradoras").delete().eq("email", email);
     } else {
@@ -90,6 +104,18 @@ async function processarItem(db, item, evento) {
   }
 
   if (status !== "aprovado") return { acao: "ignorado", email, produto, status };
+
+  if (produto === "studio") {
+    // libera o Studio: marcador que nunca falha (configuracoes) + coluna se existir
+    await db.from("configuracoes").upsert(
+      { chave: `studio:${email}`, valor: "1", atualizado_em: new Date().toISOString() },
+      { onConflict: "chave" }
+    );
+    const { error: eSt } = await db.from("compradoras")
+      .update({ studio_pago: true, atualizado_em: new Date().toISOString() }).eq("email", email);
+    if (eSt) { /* coluna pode não existir — o marcador em configuracoes já garante o acesso */ }
+    return { acao: "liberado", email, produto };
+  }
 
   // compra aprovada → registra/atualiza compradora (com nome e telefone p/ o admin)
   const patch = { email, atualizado_em: new Date().toISOString() };
