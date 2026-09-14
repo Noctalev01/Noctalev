@@ -236,17 +236,16 @@ export default function Onboarding() {
   if (etapa === "login") {
     return (
       <div className="relative max-w-md mx-auto min-h-dvh overflow-x-hidden" style={{ background: "#171d3d" }}>
+        <div className="sticky top-0 z-30 w-full text-center px-4 py-2"
+          style={{ background: "#15803d", boxShadow: "0 2px 10px rgba(0,0,0,.35)" }}>
+          <span className="text-[12.5px] font-bold text-white">
+            ✅ Compra confirmada — seu acesso já está liberado.
+          </span>
+        </div>
         <div className="hero-capa">
           <img src="/capa.jpg" alt="NoctaLev — Seu sono. Seu melhor dia." />
         </div>
         <div className="relative z-10 px-6 pb-12 -mt-2">
-          <div className="flex items-center gap-2 rounded-lg px-3.5 py-2.5 mb-4"
-            style={{ background: "rgba(126,232,178,.14)", border: "1px solid rgba(126,232,178,.4)" }}>
-            <span className="text-[15px] flex-none">✅</span>
-            <span className="text-[13px] font-extrabold" style={{ color: "#7ee8b2" }}>
-              Compra confirmada — seu acesso já está liberado.
-            </span>
-          </div>
           <h1 className="text-[23px] font-extrabold tracking-tight">Bem-vinda ao seu protocolo</h1>
           <p className="text-sub2 text-[14px] font-medium mt-1.5 leading-relaxed">
             Entre com o email usado na sua compra.<br />Sem senha e sem código — acesso imediato.
