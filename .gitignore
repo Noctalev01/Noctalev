@@ -5,3 +5,4 @@ node_modules/
 
 # pasta de exportacao (nao vai para o deploy)
 export-oferta/
+tmp-dl/
