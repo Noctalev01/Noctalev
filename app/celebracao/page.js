@@ -21,11 +21,16 @@ export default function Celebracao() {
   if (!s) return <Splash />;
 
   function fechar() {
-    const st = { ...s, celebracaoVista: true };
+    const st = load();
+    st.celebracaoVista = true;
     save(st);
-    syncNow();
+    syncNow(); // sobe para a nuvem em segundo plano
     router.replace("/");
   }
+
+  // Link de compra só é válido se foi configurado no admin (não é o placeholder)
+  const link = s.config?.checkoutFase2 || "";
+  const linkValido = /^https?:\/\//.test(link) && !link.includes("SEU-LINK");
 
   return (
     <div className="app-bg relative max-w-md mx-auto min-h-dvh">
@@ -61,13 +66,26 @@ export default function Celebracao() {
           </ul>
         </div>
 
-        <a href={s.config?.checkoutFase2 || "#"} target="_blank" rel="noreferrer"
-          className="cta-gold block w-full py-4 mt-6 text-[16px]">
-          Quero desbloquear a Fase 2
-        </a>
-        <button onClick={fechar} className="mt-4 text-[13.5px] font-bold text-sub">
-          Continuar na Fase 1 por enquanto
-        </button>
+        {linkValido ? (
+          <>
+            <a href={link} target="_blank" rel="noreferrer"
+              className="cta-gold block w-full py-4 mt-6 text-[16px]">
+              Quero desbloquear a Fase 2
+            </a>
+            <button onClick={fechar} className="mt-4 text-[13.5px] font-bold text-sub">
+              Continuar na Fase 1 por enquanto
+            </button>
+          </>
+        ) : (
+          <>
+            <div className="card mt-6 py-3 px-4 text-[13.5px] font-bold text-gold">
+              🔓 O desbloqueio da Fase 2 será liberado em breve aqui no app.
+            </div>
+            <button onClick={fechar} className="cta-gold block w-full py-4 mt-4 text-[16px]">
+              Continuar na Fase 1 por enquanto
+            </button>
+          </>
+        )}
       </div>
     </div>
   );
