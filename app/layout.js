@@ -12,13 +12,37 @@ const inter = Inter({
 });
 
 export const metadata = {
+  metadataBase: new URL("https://noctalev.vercel.app"),
   title: "NoctaLev — Protocolo Noturno",
-  description: "Seu protocolo noturno de emagrecimento baseado no sono",
+  description: "Seu protocolo noturno de emagrecimento baseado no sono. Acesso imediato após a compra — entre com o e-mail do pagamento.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
     title: "NoctaLev",
+  },
+  // ===== Capa do link (WhatsApp, Instagram, Facebook) =====
+  openGraph: {
+    title: "NoctaLev — Protocolo Noturno",
+    description: "Seu sono. Seu melhor dia. Acesso imediato após a compra.",
+    url: "https://noctalev.vercel.app",
+    siteName: "NoctaLev",
+    locale: "pt_BR",
+    type: "website",
+    images: [
+      {
+        url: "/og-noctalev.jpg",
+        width: 1200,
+        height: 630,
+        alt: "NoctaLev — Seu sono. Seu melhor dia.",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "NoctaLev — Protocolo Noturno",
+    description: "Seu sono. Seu melhor dia. Acesso imediato após a compra.",
+    images: ["/og-noctalev.jpg"],
   },
 };
 
