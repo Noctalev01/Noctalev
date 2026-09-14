@@ -240,6 +240,13 @@ export default function Onboarding() {
           <img src="/capa.jpg" alt="NoctaLev — Seu sono. Seu melhor dia." />
         </div>
         <div className="relative z-10 px-6 pb-12 -mt-2">
+          <div className="flex items-center gap-2 rounded-lg px-3.5 py-2.5 mb-4"
+            style={{ background: "rgba(126,232,178,.14)", border: "1px solid rgba(126,232,178,.4)" }}>
+            <span className="text-[15px] flex-none">✅</span>
+            <span className="text-[13px] font-extrabold" style={{ color: "#7ee8b2" }}>
+              Compra confirmada — seu acesso já está liberado.
+            </span>
+          </div>
           <h1 className="text-[23px] font-extrabold tracking-tight">Bem-vinda ao seu protocolo</h1>
           <p className="text-sub2 text-[14px] font-medium mt-1.5 leading-relaxed">
             Entre com o email usado na sua compra.<br />Sem senha e sem código — acesso imediato.
@@ -249,6 +256,9 @@ export default function Onboarding() {
               onChange={(e) => setEmail(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter" && email.includes("@") && !enviando) entrar(); }}
               className="w-full px-4 py-4 text-[16px] font-semibold" />
+            <p className="text-sub text-[12px] font-semibold mt-2 px-1">
+              💡 Use exatamente o e-mail que você digitou no pagamento.
+            </p>
           </div>
           {erro && <div className="card p-3.5 mt-4 text-[13px] font-bold text-[#e57373] leading-relaxed">{erro}</div>}
           <button disabled={!email.includes("@") || enviando}
