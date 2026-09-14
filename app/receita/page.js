@@ -213,36 +213,66 @@ export default function Receita() {
         <p className="text-[13px] text-sub2 font-semibold leading-relaxed">{FASE1.sabor}</p>
       </div>
 
-      {/* fases bloqueadas */}
-      <div className="card mt-5 overflow-hidden opacity-95" style={{ padding: 0 }}>
-        <div className="relative h-[110px]">
-          <img src="/img/fase2-shot.jpg" alt="" className="w-full h-full object-cover" style={{ filter: "saturate(.7) brightness(.75)" }} />
-          <div className="absolute inset-0" style={{ background: "linear-gradient(180deg, rgba(16,20,44,.2), rgba(16,20,44,.92))" }} />
-          <div className="absolute bottom-3 left-4 right-4 flex items-end justify-between">
-            <div className="text-[15px] font-extrabold">Fase 2 — {FASE2_TEASER.nome}</div>
-            <Icone nome="cadeado" cor="#fbd38d" size={16} />
+      {/* fases bloqueadas / liberadas para conhecer */}
+      {prog.liberada && !s.fase2Paga ? (
+        // corpo pronto → cartão vira convite para a introdução da Fase 2
+        <Link href="/fase2" className="card block mt-5 overflow-hidden" style={{ padding: 0, border: "1px solid rgba(251,211,141,.4)" }}>
+          <div className="relative h-[110px]">
+            <img src="/img/fase2-shot.jpg" alt="" className="w-full h-full object-cover" />
+            <div className="absolute inset-0" style={{ background: "linear-gradient(180deg, rgba(16,20,44,.2), rgba(16,20,44,.92))" }} />
+            <div className="absolute bottom-3 left-4 right-4 flex items-end justify-between">
+              <div className="text-[15px] font-extrabold">Fase 2 — {FASE2_TEASER.nome}</div>
+              <span className="text-[18px]">🔓</span>
+            </div>
+          </div>
+          <div className="p-[14px_18px_18px]">
+            <p className="text-[13px] text-green font-extrabold">✓ Seu corpo respondeu — a Fase 2 foi liberada!</p>
+            <p className="text-[13px] text-sub2 font-semibold mt-1 leading-relaxed">Toque para conhecer o Shot Termo-Metabólico →</p>
+          </div>
+        </Link>
+      ) : (
+        <div className="card mt-5 overflow-hidden opacity-95" style={{ padding: 0 }}>
+          <div className="relative h-[110px]">
+            <img src="/img/fase2-shot.jpg" alt="" className="w-full h-full object-cover" style={{ filter: "saturate(.7) brightness(.75)" }} />
+            <div className="absolute inset-0" style={{ background: "linear-gradient(180deg, rgba(16,20,44,.2), rgba(16,20,44,.92))" }} />
+            <div className="absolute bottom-3 left-4 right-4 flex items-end justify-between">
+              <div className="text-[15px] font-extrabold">Fase 2 — {FASE2_TEASER.nome}</div>
+              <Icone nome="cadeado" cor="#fbd38d" size={16} />
+            </div>
+          </div>
+          <div className="p-[14px_18px_18px]">
+            <p className="text-[13px] text-sub2 font-semibold leading-relaxed">{FASE2_TEASER.teaser}</p>
+            {preparou && (
+              <>
+                <div className="bar-track mt-3"><div className="bar-fill" style={{ width: `${prog.pct}%` }} /></div>
+                <div className="mt-2 text-[12.5px] font-bold text-gold">
+                  Analisando a resposta do seu corpo à Fase 1 · {prog.pct}%
+                </div>
+              </>
+            )}
           </div>
         </div>
-        <div className="p-[14px_18px_18px]">
-          <p className="text-[13px] text-sub2 font-semibold leading-relaxed">{FASE2_TEASER.teaser}</p>
-          {preparou && (
-            <>
-              <div className="bar-track mt-3"><div className="bar-fill" style={{ width: `${prog.pct}%` }} /></div>
-              <div className="mt-2 text-[12.5px] font-bold text-gold">
-                Analisando a resposta do seu corpo à Fase 1 · {prog.pct}%
-              </div>
-            </>
-          )}
-        </div>
-      </div>
+      )}
 
-      <div className="card mt-4 p-5 opacity-75">
-        <div className="flex justify-between items-center">
-          <div className="text-[15px] font-extrabold">Fase 3 — {FASE3_TEASER.nome}</div>
-          <Icone nome="cadeado" cor="#8f97c0" size={16} />
+      {s.fase2Paga && !s.fase3Paga ? (
+        // Fase 2 já é dela → cartão da Fase 3 vira convite para a introdução
+        <Link href="/fase3" className="card block mt-4 p-5" style={{ border: "1px solid rgba(165,180,252,.35)" }}>
+          <div className="flex justify-between items-center">
+            <div className="text-[15px] font-extrabold">Fase 3 — {FASE3_TEASER.nome}</div>
+            <span className="text-[16px]">🔓</span>
+          </div>
+          <p className="text-[13px] text-sub2 font-semibold mt-2 leading-relaxed">{FASE3_TEASER.teaser}</p>
+          <p className="text-[13px] text-lilac font-extrabold mt-2">Toque para conhecer a etapa final →</p>
+        </Link>
+      ) : (
+        <div className="card mt-4 p-5 opacity-75">
+          <div className="flex justify-between items-center">
+            <div className="text-[15px] font-extrabold">Fase 3 — {FASE3_TEASER.nome}</div>
+            <Icone nome="cadeado" cor="#8f97c0" size={16} />
+          </div>
+          <p className="text-[13px] text-sub2 font-semibold mt-2 leading-relaxed">{FASE3_TEASER.teaser}</p>
         </div>
-        <p className="text-[13px] text-sub2 font-semibold mt-2 leading-relaxed">{FASE3_TEASER.teaser}</p>
-      </div>
+      )}
 
       <div className="card mt-5 p-4 text-[12px] text-sub font-semibold leading-relaxed">
         ⚠️ Este protocolo não substitui acompanhamento médico. Não indicado para grávidas, lactantes e crianças.

@@ -57,8 +57,9 @@ function extrairProduto(item) {
     ""
   ).toLowerCase();
   if (nome.includes("studio") || offerId.includes("35gq5du")) return "studio";
-  if (nome.includes("fase 3") || nome.includes("fase3")) return "fase3";
-  if (nome.includes("fase 2") || nome.includes("fase2")) return "fase2";
+  // reconhece pelo nome OU pelo código da oferta na Cakto (dupla garantia)
+  if (nome.includes("fase 3") || nome.includes("fase3") || offerId.includes("t2tvh6v")) return "fase3";
+  if (nome.includes("fase 2") || nome.includes("fase2") || offerId.includes("3ep394x")) return "fase2";
   return "fase1";
 }
 

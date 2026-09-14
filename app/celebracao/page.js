@@ -28,7 +28,17 @@ export default function Celebracao() {
     router.replace("/");
   }
 
-  // Link de compra só é válido se foi configurado no admin (não é o placeholder)
+  // Marca a celebração como vista e leva à página de introdução da Fase 2
+  // (que explica tudo antes do pagamento)
+  function conhecerFase2() {
+    const st = load();
+    st.celebracaoVista = true;
+    save(st);
+    syncNow();
+    router.replace("/fase2");
+  }
+
+  // Link de compra só é válido se foi configurado (não é o placeholder)
   const link = s.config?.checkoutFase2 || "";
   const linkValido = /^https?:\/\//.test(link) && !link.includes("SEU-LINK");
 
@@ -68,10 +78,10 @@ export default function Celebracao() {
 
         {linkValido ? (
           <>
-            <a href={link} target="_blank" rel="noreferrer"
+            <button onClick={conhecerFase2}
               className="cta-gold block w-full py-4 mt-6 text-[16px]">
-              Quero desbloquear a Fase 2
-            </a>
+              Conhecer a Fase 2 →
+            </button>
             <button onClick={fechar} className="mt-4 text-[13.5px] font-bold text-sub">
               Continuar na Fase 1 por enquanto
             </button>
