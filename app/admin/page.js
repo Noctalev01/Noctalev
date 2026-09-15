@@ -56,6 +56,7 @@ export default function Admin() {
   const [carregando, setCarregando] = useState(false);
   const [nota, setNota] = useState("");
   const [emailNova, setEmailNova] = useState("");
+  const [editandoContato, setEditandoContato] = useState(null); // { email, nome, telefone }
   const [cfg, setCfg] = useState(null); // configurações globais (progressão/checkout/suporte)
 
   useEffect(() => {
@@ -113,6 +114,17 @@ export default function Admin() {
         impulsos: { def: cfg.impulsos },
       },
     });
+  }
+
+  async function salvarContato() {
+    if (!editandoContato?.email) return;
+    const r = await fetch("/api/admin", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ pin, acao: "salvar_contato", email: editandoContato.email, nome: editandoContato.nome.trim(), telefone: editandoContato.telefone.trim() }),
+    });
+    const j = await r.json();
+    if (j.ok) { flash("Contato salvo ✅"); setEditandoContato(null); recarregar(); }
+    else flash("Erro: " + (j.error || "?"));
   }
 
   async function abrirDetalhe(id) {
@@ -279,37 +291,67 @@ export default function Admin() {
           <>
             <Section title="🛒 Quem comprou × quem já entrou no app">
               <p className="text-sub text-[12px] font-semibold mb-3 leading-relaxed">
-                Cruzamento automático: lista de compras (Cakto + liberações manuais) contra os perfis criados no app.
-                <b className="text-txt"> Quem nunca acessou aparece primeiro</b> — cada uma delas é risco de reembolso; mande a mensagem de ativação!
+                <b className="text-txt">Quem nunca acessou aparece primeiro</b> (compra mais antiga no topo = mais urgente).
+                Cada uma delas provavelmente não instalou o app — é risco de reembolso. Chame no WhatsApp!
               </p>
               {(dados?.compradorasStatus || []).length === 0 && (
                 <div className="text-sub text-[13px] font-semibold text-center py-4">Nenhuma compradora registrada ainda.</div>
               )}
               <div className="space-y-2">
                 {(dados?.compradorasStatus || []).map((c) => (
-                  <div key={c.email} className="rounded-xl p-3 flex items-center justify-between gap-2"
+                  <div key={c.email} className="rounded-xl p-3"
                     style={{ background: c.acessou ? "rgba(126,232,178,.05)" : "rgba(229,115,115,.07)", border: `1px solid ${c.acessou ? "rgba(126,232,178,.25)" : "rgba(229,115,115,.4)"}` }}>
-                    <div className="min-w-0">
-                      <div className="text-[13px] font-extrabold truncate">
-                        {c.acessou ? "✅" : "🚨"} {c.nome || c.email}
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="text-[13px] font-extrabold truncate">
+                          {c.acessou ? "✅" : "🚨"} {c.nome || c.email}
+                        </div>
+                        <div className="text-[11px] text-sub2 font-semibold mt-0.5 truncate">
+                          {c.email}
+                        </div>
+                        {c.telefone && (
+                          <button onClick={(e) => { e.stopPropagation(); navigator.clipboard?.writeText(c.telefone).then(() => flash("Número copiado 📋")); }}
+                            className="text-[12px] font-extrabold mt-0.5 text-lilac">
+                            📱 {c.telefone} <span className="text-[10px] opacity-70">(toque p/ copiar)</span>
+                          </button>
+                        )}
+                        <div className="text-[11px] font-bold mt-0.5">
+                          {c.acessou
+                            ? <span className="text-green">1º acesso em {c.primeiroAcesso?.slice(0, 10)} · dia {c.dia ?? "—"} do protocolo</span>
+                            : <span className="text-[#e57373]">NUNCA ACESSOU{c.diasDesdeCompra != null ? ` · comprou há ${c.diasDesdeCompra === 0 ? "hoje" : c.diasDesdeCompra + (c.diasDesdeCompra === 1 ? " dia" : " dias")}` : ""}</span>}
+                          {c.fase2Paga && <span className="text-gold"> · F2 paga 💰</span>}
+                        </div>
                       </div>
-                      <div className="text-[11px] text-sub2 font-semibold mt-0.5 truncate">
-                        {c.email}{c.telefone ? ` · 📱 ${c.telefone}` : ""}
-                      </div>
-                      <div className="text-[11px] font-bold mt-0.5">
-                        {c.acessou
-                          ? <span className="text-green">1º acesso em {c.primeiroAcesso?.slice(0, 10)} · dia {c.dia ?? "—"} do protocolo</span>
-                          : <span className="text-[#e57373]">NUNCA ACESSOU O APP{c.compradaEm ? ` · comprou em ${c.compradaEm.slice(0, 10)}` : ""}</span>}
-                        {c.fase2Paga && <span className="text-gold"> · F2 paga 💰</span>}
+                      <div className="flex flex-col gap-1.5 items-end">
+                        {!c.acessou && <BtnWhats telefone={c.telefone} msg={msgWhats("ativacao", { nome: c.nome })} rotulo={c.telefone ? "Chamar" : "Ativar"} />}
+                        <button onClick={() => setEditandoContato(editandoContato === c.email ? null : { email: c.email, nome: c.nome || "", telefone: c.telefone || "" })}
+                          className="text-[11px] font-extrabold px-3 py-1.5 rounded-full"
+                          style={{ background: "rgba(165,180,252,.1)", border: "1px solid rgba(165,180,252,.35)", color: "#a5b4fc" }}>
+                          ✏️ {c.telefone ? "Editar" : "+ Telefone"}
+                        </button>
                       </div>
                     </div>
-                    {!c.acessou && <BtnWhats telefone={c.telefone} msg={msgWhats("ativacao", { nome: c.nome })} rotulo="Ativar" />}
+                    {editandoContato && editandoContato.email === c.email && (
+                      <div className="mt-3 pt-3 flex flex-col gap-2" style={{ borderTop: "1px solid rgba(255,255,255,.08)" }}>
+                        <input value={editandoContato.nome} placeholder="Nome"
+                          onChange={(e) => setEditandoContato({ ...editandoContato, nome: e.target.value })}
+                          className="w-full px-3 py-2 text-[13px] font-semibold" />
+                        <input value={editandoContato.telefone} placeholder="Telefone com DDD (ex: 54999887766)" inputMode="tel"
+                          onChange={(e) => setEditandoContato({ ...editandoContato, telefone: e.target.value })}
+                          className="w-full px-3 py-2 text-[13px] font-semibold" />
+                        <div className="flex gap-2">
+                          <button onClick={salvarContato} className="cta-gold flex-1 py-2 text-[12.5px]">Salvar contato</button>
+                          <button onClick={() => setEditandoContato(null)} className="px-4 py-2 text-[12.5px] font-bold text-sub">Cancelar</button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
             </Section>
             <p className="text-sub text-[11px] font-semibold mt-2 leading-relaxed px-1">
-              💡 Sem telefone? O botão abre o WhatsApp com a mensagem pronta — é só escolher o contato. Novas compras já chegam com nome e telefone automaticamente.
+              💡 Novas compras já chegam com nome e telefone automáticos (webhook da Cakto). Para as antigas, use “+ Telefone”
+              — pegue o número no painel da Cakto (Vendas → detalhe da compra) e cole aqui uma vez; fica salvo para sempre.
             </p>
           </>
         )}

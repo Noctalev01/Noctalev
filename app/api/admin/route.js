@@ -58,13 +58,21 @@ export async function GET(req) {
 
   // lista (dashboard + funil + risco + vendas + compradoras×acesso)
   const hoje = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date());
-  const [{ data: perfis }, { data: cksHoje }, { data: todosCks }, { data: compradoras }, { data: todosRituais }] = await Promise.all([
+  const [{ data: perfis }, { data: cksHoje }, { data: todosCks }, { data: compradoras }, { data: todosRituais }, { data: cfgContatos }] = await Promise.all([
     db.from("profiles").select("*").order("criado_em", { ascending: false }),
     db.from("checkins").select("user_id").eq("data", hoje),
     db.from("checkins").select("user_id, data, peso"),
     db.from("compradoras").select("*"),
     db.from("rituais").select("user_id, data"),
+    db.from("configuracoes").select("chave, valor").like("chave", "contato:%"),
   ]);
+
+  // contatos capturados pelo webhook (nome/telefone) — marcador contato:{email}
+  const contatos = {};
+  (cfgContatos || []).forEach((r) => {
+    const em = r.chave.slice(8).toLowerCase();
+    if (r.valor && typeof r.valor === "object") contatos[em] = r.valor;
+  });
 
   // separa contas de teste (ficam fora de TUDO: lista, métricas e CSV)
   const idsTeste = new Set((perfis || []).filter((p) => ehTeste(p.email)).map((p) => p.id));
@@ -153,11 +161,16 @@ export async function GET(req) {
     const em = String(c.email || "").toLowerCase();
     const prof = emailsComPerfil.get(em);
     const u = prof ? usuarias.find((x) => x.id === prof.id) : null;
+    const ct = contatos[em] || {};
+    const diasDesdeCompra = c.criado_em
+      ? Math.max(0, Math.round((new Date(hoje) - new Date(c.criado_em.slice(0, 10))) / 86400000))
+      : null;
     return {
       email: em,
-      nome: c.nome || u?.nome || null,
-      telefone: c.telefone || null,
+      nome: c.nome || ct.nome || u?.nome || null,
+      telefone: c.telefone || ct.telefone || null,
       compradaEm: c.criado_em || null,
+      diasDesdeCompra,
       fase2Paga: !!c.fase2_paga,
       fase3Paga: !!c.fase3_paga,
       acessou: !!prof,                         // criou perfil = fez o 1º acesso
@@ -166,7 +179,11 @@ export async function GET(req) {
       diasSemAtividade: u?.diasSemAtividade ?? null,
       userId: prof?.id || null,
     };
-  }).sort((a, b) => Number(a.acessou) - Number(b.acessou)); // nunca acessou primeiro
+  }).sort((a, b) => {
+    if (a.acessou !== b.acessou) return Number(a.acessou) - Number(b.acessou); // nunca acessou primeiro
+    if (!a.acessou && !b.acessou) return (b.diasDesdeCompra ?? 0) - (a.diasDesdeCompra ?? 0); // mais antiga = mais urgente
+    return 0;
+  });
 
   const nuncaAcessou = compradorasStatus.filter((c) => !c.acessou).length;
 
@@ -255,6 +272,16 @@ export async function POST(req) {
     return NextResponse.json({ ok: true, enviadas });
   }
   else if (acao === "add_compradora") await db.from("compradoras").upsert({ email: body.email?.trim().toLowerCase() }, { onConflict: "email" });
+  else if (acao === "salvar_contato") {
+    // salva/edita nome+telefone de uma compradora (marcador que nunca falha)
+    const em = String(body.email || "").trim().toLowerCase();
+    if (!em) return NextResponse.json({ error: "email obrigatório" }, { status: 400 });
+    const tel = body.telefone ? String(body.telefone).replace(/[^\d+]/g, "") : null;
+    await db.from("configuracoes").upsert(
+      { chave: `contato:${em}`, valor: { nome: body.nome || null, telefone: tel }, atualizado_em: new Date().toISOString() },
+      { onConflict: "chave" }
+    );
+  }
   else if (acao === "salvar_config") {
     // body.config = { progressao: {...}, checkout: {...}, suporte: {...} }
     const entradas = Object.entries(body.config || {});

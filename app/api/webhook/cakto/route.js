@@ -157,6 +157,19 @@ async function processarItem(db, item, evento) {
 
   if (status !== "aprovado") return { acao: "ignorado", email, produto, status };
 
+  // guarda o contato (nome + telefone) num marcador que NUNCA falha —
+  // a tabela compradoras pode não ter essas colunas; configuracoes sempre tem
+  const nomeContato = extrairNome(item);
+  const telContato = extrairTelefone(item);
+  if (nomeContato || telContato) {
+    try {
+      await db.from("configuracoes").upsert(
+        { chave: `contato:${email}`, valor: { nome: nomeContato || null, telefone: telContato || null }, atualizado_em: new Date().toISOString() },
+        { onConflict: "chave" }
+      );
+    } catch { /* nunca bloqueia a liberação */ }
+  }
+
   if (produto === "studio") {
     // libera o Studio: marcador que nunca falha (configuracoes) + coluna se existir
     await db.from("configuracoes").upsert(
