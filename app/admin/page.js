@@ -22,8 +22,21 @@ function msgWhats(tipo, u) {
     return `${nome}, notícia boa! 🎉 Seu corpo respondeu tão bem ao protocolo${kg ? ` (já foram ${kg}kg!)` : ""} que a sua Fase 2 — o Shot Termo-Metabólico — já está LIBERADA no app. É a etapa que acelera a queima. Abre lá e confere 👀🌙`;
   if (tipo === "incentivo")
     return `Oi ${nome}! 💛 Você está indo MUITO bem no protocolo${kg ? ` — ${kg}kg já eliminados!` : "!"} Continue com o ritual e os check-ins que uma surpresa boa está chegando no seu app... 👀✨`;
-  if (tipo === "ativacao")
-    return `Oi${nome ? " " + nome : ""}! Aqui é do NoctaLev 💛 Vi que você garantiu seu Protocolo Noturno mas ainda não entrou no app! É só acessar https://noctalev.vercel.app e entrar com este mesmo email da compra. Seu primeiro chá pode ser hoje à noite — me chama se precisar de ajuda! 🌙`;
+  if (tipo === "ativacao") {
+    const em = (u.email || "").trim().toLowerCase();
+    const link = em ? `https://noctalev.vercel.app/onboarding?email=${encodeURIComponent(em)}` : "https://noctalev.vercel.app";
+    return `Oi${nome ? " " + nome : ""}! Aqui é a equipe do NoctaLev 💛
+
+Vi que você garantiu o seu *Protocolo Noturno*, mas ainda não ativou o seu acesso — vim te ajudar! É rapidinho, olha só:
+
+1️⃣ Toque neste link: ${link}
+2️⃣ ${em ? `Seu email da compra já vai aparecer preenchido (*${em}*) — é só tocar no botão *ENTRAR*` : `Digite o email que você usou na compra e toque em *ENTRAR*`}
+3️⃣ Siga as telinhas para instalar o app na sua tela de início 📲
+
+Pronto! Sem senha e sem código — o acesso é imediato ✨
+
+Seu primeiro chá já pode ser hoje à noite 🌙 Qualquer dificuldade me responde aqui que eu te ajudo na hora!`;
+  }
   if (tipo === "vendaF3")
     return `${nome}, você é uma das nossas melhores alunas! 👑 ${kg ? `${kg}kg eliminados e contando... ` : ""}A próxima etapa da sua transformação já está disponível — dá uma olhada no app! 🌙✨`;
   return "";
@@ -382,7 +395,7 @@ export default function Admin() {
                         </div>
                       </div>
                       <div className="flex flex-col gap-1.5 items-end">
-                        {!c.acessou && <BtnWhats telefone={c.telefone} msg={msgWhats("ativacao", { nome: c.nome })} rotulo={c.telefone ? "Chamar" : "Ativar"} />}
+                        {!c.acessou && <BtnWhats telefone={c.telefone} msg={msgWhats("ativacao", { nome: c.nome, email: c.email })} rotulo={c.telefone ? "Chamar" : "Ativar"} />}
                         <button onClick={() => setEditandoContato(editandoContato === c.email ? null : { email: c.email, nome: c.nome || "", telefone: c.telefone || "" })}
                           className="text-[11px] font-extrabold px-3 py-1.5 rounded-full"
                           style={{ background: "rgba(165,180,252,.1)", border: "1px solid rgba(165,180,252,.35)", color: "#a5b4fc" }}>

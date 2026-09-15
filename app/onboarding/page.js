@@ -45,6 +45,14 @@ export default function Onboarding() {
 
   const set = (k, v) => setF((p) => ({ ...p, [k]: v }));
 
+  // Se o link veio com ?email= (mensagem de WhatsApp), já preenche o email da compra
+  useEffect(() => {
+    try {
+      const em = new URLSearchParams(window.location.search).get("email");
+      if (em && em.includes("@")) setEmail(em.trim().toLowerCase());
+    } catch (_) {}
+  }, []);
+
   // PASSO 0: no celular, ensina a instalar o app ANTES do login.
   // Assim ela já entra direto pelo app instalado e o acesso fica salvo lá.
   useEffect(() => {
