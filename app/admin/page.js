@@ -57,6 +57,9 @@ export default function Admin() {
   const [nota, setNota] = useState("");
   const [emailNova, setEmailNova] = useState("");
   const [editandoContato, setEditandoContato] = useState(null); // { email, nome, telefone }
+  const [importandoCakto, setImportandoCakto] = useState(false);
+  const [pedirCredCakto, setPedirCredCakto] = useState(false);
+  const [credCakto, setCredCakto] = useState({ clientId: "", clientSecret: "" });
   const [cfg, setCfg] = useState(null); // configurações globais (progressão/checkout/suporte)
 
   useEffect(() => {
@@ -125,6 +128,36 @@ export default function Admin() {
     const j = await r.json();
     if (j.ok) { flash("Contato salvo ✅"); setEditandoContato(null); recarregar(); }
     else flash("Erro: " + (j.error || "?"));
+  }
+
+  async function importarCakto() {
+    setImportandoCakto(true);
+    try {
+      const corpo = { pin, acao: "importar_cakto" };
+      if (credCakto.clientId.trim() && credCakto.clientSecret.trim()) {
+        corpo.clientId = credCakto.clientId.trim();
+        corpo.clientSecret = credCakto.clientSecret.trim();
+      }
+      const r = await fetch("/api/admin", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(corpo),
+      });
+      const j = await r.json();
+      if (j.ok) {
+        flash(`✅ ${j.compradoras} compradoras · ${j.telefonesNovos} telefones novos${j.semTelefone ? ` · ${j.semTelefone} sem telefone na Cakto` : ""}`);
+        setPedirCredCakto(false);
+        setCredCakto({ clientId: "", clientSecret: "" });
+        recarregar();
+      } else if (j.error === "precisa_credenciais") {
+        setPedirCredCakto(true);
+        flash("Cole as chaves da Cakto abaixo (só na primeira vez) 🔑");
+      } else {
+        flash("Erro: " + (j.mensagem || j.error || "?"));
+      }
+    } catch (e) {
+      flash("Erro de conexão — tente de novo");
+    }
+    setImportandoCakto(false);
   }
 
   async function abrirDetalhe(id) {
@@ -294,6 +327,32 @@ export default function Admin() {
                 <b className="text-txt">Quem nunca acessou aparece primeiro</b> (compra mais antiga no topo = mais urgente).
                 Cada uma delas provavelmente não instalou o app — é risco de reembolso. Chame no WhatsApp!
               </p>
+              <div className="mb-3">
+                <button onClick={importarCakto} disabled={importandoCakto}
+                  className="w-full rounded-xl py-2.5 text-[13px] font-extrabold border border-[#7ee8b2]/40 bg-[#7ee8b2]/10 text-[#7ee8b2] disabled:opacity-50">
+                  {importandoCakto ? "Importando da Cakto… ⏳" : "⬇️ Importar telefones da Cakto (1 toque)"}
+                </button>
+                {pedirCredCakto && (
+                  <div className="mt-2 rounded-xl border border-[#fbd38d]/30 bg-[#fbd38d]/5 p-3 space-y-2">
+                    <p className="text-[11.5px] text-sub font-semibold leading-relaxed">
+                      Primeira vez: crie uma <b className="text-txt">Chave de API</b> na Cakto em
+                      {" "}<b className="text-txt">Integrações → Cakto API → Criar Chave de API</b> (marque os escopos
+                      {" "}<b className="text-txt">read</b> e <b className="text-txt">orders</b>) e cole aqui.
+                      Fica salvo — nas próximas é só 1 toque.
+                    </p>
+                    <input value={credCakto.clientId} placeholder="Client ID"
+                      onChange={(e) => setCredCakto({ ...credCakto, clientId: e.target.value })}
+                      className="w-full rounded-lg bg-black/25 border border-white/10 px-3 py-2 text-[13px] text-txt" />
+                    <input value={credCakto.clientSecret} placeholder="Client Secret (aparece só na criação da chave)"
+                      onChange={(e) => setCredCakto({ ...credCakto, clientSecret: e.target.value })}
+                      className="w-full rounded-lg bg-black/25 border border-white/10 px-3 py-2 text-[13px] text-txt" />
+                    <button onClick={importarCakto} disabled={importandoCakto || !credCakto.clientId.trim() || !credCakto.clientSecret.trim()}
+                      className="cta-gold w-full py-2 text-[12.5px] disabled:opacity-50">
+                      {importandoCakto ? "Importando… ⏳" : "Salvar chaves e importar"}
+                    </button>
+                  </div>
+                )}
+              </div>
               {(dados?.compradorasStatus || []).length === 0 && (
                 <div className="text-sub text-[13px] font-semibold text-center py-4">Nenhuma compradora registrada ainda.</div>
               )}

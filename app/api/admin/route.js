@@ -15,6 +15,18 @@ function autz(pin) {
   return pin && pin === (process.env.ADMIN_PIN || "2026");
 }
 
+// ---- API oficial da Cakto (importação de telefones) ----
+async function caktoToken(clientId, clientSecret) {
+  const r = await fetch("https://api.cakto.com.br/public_api/token/", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({ client_id: clientId, client_secret: clientSecret }),
+  });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok || !j.access_token) throw new Error("Credenciais da Cakto inválidas — confira o Client ID e o Client Secret");
+  return j.access_token;
+}
+
 export async function GET(req) {
   const url = new URL(req.url);
   if (!autz(url.searchParams.get("pin"))) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
@@ -281,6 +293,71 @@ export async function POST(req) {
       { chave: `contato:${em}`, valor: { nome: body.nome || null, telefone: tel }, atualizado_em: new Date().toISOString() },
       { onConflict: "chave" }
     );
+  }
+  else if (acao === "importar_cakto") {
+    try {
+      // credenciais: corpo (salva p/ próximas vezes) > banco > env
+      let clientId = String(body.clientId || "").trim();
+      let clientSecret = String(body.clientSecret || "").trim();
+      const veioNoCorpo = !!(clientId && clientSecret);
+      if (!veioNoCorpo) {
+        const { data: cred } = await db.from("configuracoes").select("valor").eq("chave", "cakto_api").maybeSingle();
+        clientId = clientId || cred?.valor?.clientId || process.env.CAKTO_CLIENT_ID || "";
+        clientSecret = clientSecret || cred?.valor?.clientSecret || process.env.CAKTO_CLIENT_SECRET || "";
+      }
+      if (!clientId || !clientSecret) {
+        return NextResponse.json({ error: "precisa_credenciais", mensagem: "Cole o Client ID e o Client Secret da Cakto (só na primeira vez)." }, { status: 400 });
+      }
+      const token = await caktoToken(clientId, clientSecret);
+      // só grava as chaves DEPOIS de validar (nunca salva credencial errada)
+      if (veioNoCorpo) {
+        await db.from("configuracoes").upsert(
+          { chave: "cakto_api", valor: { clientId, clientSecret }, atualizado_em: new Date().toISOString() },
+          { onConflict: "chave" }
+        );
+      }
+
+      // contatos já salvos — não sobrescreve o que foi digitado manualmente
+      const { data: exist } = await db.from("configuracoes").select("chave, valor").like("chave", "contato:%");
+      const jaTem = {};
+      (exist || []).forEach((r) => { jaTem[r.chave.slice(8)] = r.valor || {}; });
+
+      // pedidos pagos, com paginação
+      let urlPag = "https://api.cakto.com.br/public_api/orders/?status=paid&limit=100";
+      let compradoras = 0, telefonesNovos = 0, semTelefone = 0, paginas = 0;
+      const vistos = new Set();
+      while (urlPag && paginas < 50) {
+        paginas++;
+        const r = await fetch(urlPag, { headers: { Authorization: `Bearer ${token}` } });
+        const j = await r.json().catch(() => ({}));
+        if (!r.ok) throw new Error(j.detail || "Erro ao listar pedidos na Cakto — confira se a chave tem os escopos read + orders");
+        for (const p of j.results || []) {
+          const em = String(p?.customer?.email || "").trim().toLowerCase();
+          if (!em || ehTeste(em) || vistos.has(em)) continue;
+          vistos.add(em);
+          compradoras++;
+          const telCakto = String(p?.customer?.phone || "").replace(/[^\d+]/g, "") || null;
+          const nomeCakto = p?.customer?.name || null;
+          if (!telCakto) semTelefone++;
+          const atual = jaTem[em] || {};
+          const novo = { nome: atual.nome || nomeCakto, telefone: atual.telefone || telCakto };
+          const mudou = novo.nome !== atual.nome || novo.telefone !== atual.telefone || !exist?.some((x) => x.chave === `contato:${em}`);
+          if (mudou) {
+            await db.from("configuracoes").upsert(
+              { chave: `contato:${em}`, valor: novo, atualizado_em: new Date().toISOString() },
+              { onConflict: "chave" }
+            );
+          }
+          if (novo.telefone && novo.telefone !== atual.telefone) telefonesNovos++;
+          // garante que a compradora aparece na lista (upsert só do email não apaga nada)
+          try { await db.from("compradoras").upsert({ email: em }, { onConflict: "email" }); } catch (_) {}
+        }
+        urlPag = j.next || null;
+      }
+      return NextResponse.json({ ok: true, compradoras, telefonesNovos, semTelefone });
+    } catch (e) {
+      return NextResponse.json({ error: String(e?.message || e) }, { status: 502 });
+    }
   }
   else if (acao === "salvar_config") {
     // body.config = { progressao: {...}, checkout: {...}, suporte: {...} }
