@@ -8,6 +8,40 @@ import { useEffect, useRef, useState } from "react";
 
 const CHECKOUT = "https://pay.cakto.com.br/keibt5s_1054022";
 const PIXEL_ID = "3045648935777848";
+const PRECO = 47.9; // preço à vista — usado em value/currency do pixel
+const PRODUTO = "NoctaLev Protocolo 60 dias";
+const CAPI_URL = "https://noctalev.vercel.app/api/meta-evento";
+
+// ---- Meta: dedupe navegador+servidor ----
+function novoEventId(prefixo) {
+  try { return prefixo + "_" + crypto.randomUUID(); }
+  catch { return prefixo + "_" + Date.now() + "_" + Math.random().toString(36).slice(2, 10); }
+}
+function lerCookie(nome) {
+  try {
+    const m = document.cookie.match(new RegExp("(?:^|; )" + nome + "=([^;]+)"));
+    return m ? decodeURIComponent(m[1]) : null;
+  } catch { return null; }
+}
+// espelha o evento no servidor (CAPI) com o MESMO event_id do fbq
+function espelharServidor(eventName, eventId, custom) {
+  try {
+    const payload = JSON.stringify({
+      event_name: eventName,
+      event_id: eventId,
+      event_source_url: window.location.href,
+      fbp: lerCookie("_fbp"),
+      fbc: lerCookie("_fbc"),
+      ...custom,
+    });
+    // sendBeacon sobrevive ao redirect do checkout
+    if (navigator.sendBeacon) {
+      navigator.sendBeacon(CAPI_URL, new Blob([payload], { type: "application/json" }));
+    } else {
+      fetch(CAPI_URL, { method: "POST", headers: { "Content-Type": "application/json" }, body: payload, keepalive: true });
+    }
+  } catch {}
+}
 
 // ---- antes e depois (fotos hospedadas no próprio site, em WebP leve) ----
 const RESULTADOS = [
@@ -32,11 +66,14 @@ function urlCheckout() {
   }
 }
 
-// ---- pixel: dispara InitiateCheckout e redireciona ----
+// ---- pixel: dispara InitiateCheckout (com value/currency + eventID) e redireciona ----
 function irCheckout() {
+  const eventId = novoEventId("ic");
+  const dados = { value: PRECO, currency: "BRL", content_name: PRODUTO };
   try {
-    if (window.fbq) window.fbq("track", "InitiateCheckout");
+    if (window.fbq) window.fbq("track", "InitiateCheckout", dados, { eventID: eventId });
   } catch {}
+  espelharServidor("InitiateCheckout", eventId, dados); // mesmo id = dedupe na Meta
   // pequeno delay pro pixel sair antes do redirect
   setTimeout(() => {
     window.location.href = urlCheckout();
@@ -259,8 +296,12 @@ export default function Oferta() {
         /* eslint-enable */
         window.fbq("init", PIXEL_ID);
       }
-      window.fbq("track", "PageView");
-      window.fbq("track", "ViewContent", { content_name: "oferta-noctalev" });
+      const idPv = novoEventId("pv");
+      const idVc = novoEventId("vc");
+      window.fbq("track", "PageView", {}, { eventID: idPv });
+      window.fbq("track", "ViewContent", { value: PRECO, currency: "BRL", content_name: PRODUTO }, { eventID: idVc });
+      espelharServidor("PageView", idPv, {});
+      espelharServidor("ViewContent", idVc, { value: PRECO, currency: "BRL", content_name: PRODUTO });
     } catch {}
   }, []);
 

@@ -10,6 +10,7 @@
 // ============================================================
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "../../../../lib/supabaseAdmin";
+import { enviarEventoMeta, hashMeta, hashTelefone } from "../../../../lib/metaCapi";
 
 export const dynamic = "force-dynamic";
 
@@ -74,6 +75,56 @@ function extrairStatus(item, evento) {
   return "outro";
 }
 
+// -------- Meta CAPI: Purchase server-side com dedupe ----------
+// event_id = id da transação na Cakto (estável): se a Cakto reenviar o
+// webhook, a Meta ignora a duplicata. value/currency sempre presentes.
+function extrairValor(item) {
+  const cands = [item?.amount, item?.baseAmount, item?.base_amount, item?.total, item?.value, item?.price, item?.offer?.price, item?.product?.price];
+  for (const c of cands) {
+    const n = Number(c);
+    if (Number.isFinite(n) && n > 0) return n > 1000 ? n / 100 : n; // centavos → reais
+  }
+  return null;
+}
+
+function extrairTransacaoId(item) {
+  return item?.refId || item?.ref_id || item?.id || item?.transaction_id || item?.saleId || item?.sale_id || null;
+}
+
+const NOMES_PRODUTO = {
+  fase1: "NoctaLev Protocolo 60 dias",
+  fase2: "NoctaLev Fase 2 - Shot Termo-Metabolico",
+  fase3: "NoctaLev Fase 3 - Energia e Manutencao",
+  studio: "NoctaLev Studio",
+};
+
+async function dispararPurchaseMeta(item, produto, email) {
+  const valor = extrairValor(item);
+  const txId = extrairTransacaoId(item);
+  // event_id estável por transação (dedupe entre reenvios do webhook)
+  const eventId = "pur_" + (txId ? String(txId) : `${email}_${produto}_${new Date().toISOString().slice(0, 10)}`);
+  const user_data = { em: [hashMeta(email)] };
+  const tel = extrairTelefone(item);
+  if (tel) user_data.ph = [hashTelefone(tel)];
+  const nome = extrairNome(item);
+  if (nome) user_data.fn = [hashMeta(String(nome).split(" ")[0])];
+  const evt = {
+    event_name: "Purchase",
+    event_time: Math.floor(Date.now() / 1000),
+    event_id: eventId,
+    action_source: "website",
+    event_source_url: "https://noctalev.online/oferta/",
+    user_data,
+    custom_data: {
+      value: Number.isFinite(valor) && valor ? valor : 47.9, // fallback: preço à vista
+      currency: "BRL",
+      content_name: NOMES_PRODUTO[produto] || "NoctaLev",
+    },
+  };
+  // não bloqueia a liberação do acesso se a Meta falhar
+  try { await enviarEventoMeta(evt); } catch {}
+}
+
 async function processarItem(db, item, evento) {
   const email = extrairEmail(item)?.trim().toLowerCase();
   if (!email) return { erro: "sem email" };
@@ -115,6 +166,7 @@ async function processarItem(db, item, evento) {
     const { error: eSt } = await db.from("compradoras")
       .update({ studio_pago: true, atualizado_em: new Date().toISOString() }).eq("email", email);
     if (eSt) { /* coluna pode não existir — o marcador em configuracoes já garante o acesso */ }
+    await dispararPurchaseMeta(item, produto, email);
     return { acao: "liberado", email, produto };
   }
 
@@ -145,6 +197,7 @@ async function processarItem(db, item, evento) {
     }
   }
 
+  await dispararPurchaseMeta(item, produto, email);
   return { acao: "liberado", email, produto };
 }
 
