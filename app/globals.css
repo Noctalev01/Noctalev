@@ -191,9 +191,22 @@ body.texto-grande { zoom: 1.14; }
   body.texto-grande { transform: scale(1.14); transform-origin: top center; }
 }
 
+/* ===== destaque pulsante nos mockups do passo a passo de instalação ===== */
+@keyframes alvoPulse {
+  0%, 100% { box-shadow: 0 0 0 4px rgba(251, 211, 141, 0.18); }
+  50% { box-shadow: 0 0 0 8px rgba(251, 211, 141, 0.05); }
+}
+.anim-alvo { animation: alvoPulse 1.6s ease-in-out infinite; pointer-events: none; }
+
+/* capa compacta da tela de entrada (mostra só a marca, sem ocupar a tela toda) */
+.hero-capa.compacta {
+  aspect-ratio: 1 / 0.56;
+}
+.hero-capa.compacta img { object-position: center 30%; }
+
 /* respeita quem prefere menos movimento (acessibilidade) */
 @media (prefers-reduced-motion: reduce) {
-  .stagger > *, .page-in, .anim-pop, .anim-float, .splash-lua, .splash-dot { animation: none !important; }
+  .stagger > *, .page-in, .anim-pop, .anim-float, .splash-lua, .splash-dot, .anim-alvo { animation: none !important; }
 }
 
 ::-webkit-scrollbar { width: 0; height: 0; }

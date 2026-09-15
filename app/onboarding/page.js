@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Stars, Logo } from "../../components/ui";
+import PassosInstalar, { estaInstalado, ehCelular } from "../../components/PassosInstalar";
 import { load, salvarPerfil, salvarFotoAntes } from "../../lib/store";
 import { supabase } from "../../lib/supabase";
 import { pullFromCloud, pushProfile } from "../../lib/sync";
@@ -13,26 +14,19 @@ const SLIDES = [
   { emoji: "📈", titulo: "Registre seu sono e peso todo dia", texto: "Em poucos toques por dia, você acompanha sua evolução e desbloqueia as próximas fases." },
 ];
 
-// ---- detecção de instalação (PWA) ----
-function estaInstalado() {
-  if (typeof window === "undefined") return true;
-  return window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
-}
-function ehIOS() {
-  if (typeof navigator === "undefined") return false;
-  return /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
-}
-function ehCelular() {
-  if (typeof navigator === "undefined") return false;
-  return /android|iphone|ipad|ipod/i.test(navigator.userAgent);
+function IconWhats({ size = 24 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" className="flex-none" aria-hidden="true">
+      <path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5.1-1.3A10 10 0 1 0 12 2Z" fill="#25D366" />
+      <path d="M16.6 13.8c-.25-.13-1.47-.72-1.7-.8-.23-.09-.4-.13-.56.12-.17.25-.64.8-.79.97-.14.17-.29.19-.54.06a6.7 6.7 0 0 1-3.35-2.93c-.25-.43.25-.4.72-1.34.08-.17.04-.31-.02-.44-.06-.12-.56-1.35-.77-1.85-.2-.48-.4-.42-.56-.43h-.48c-.17 0-.44.06-.66.31-.23.25-.87.85-.87 2.07 0 1.22.9 2.4 1.02 2.57.12.17 1.76 2.68 4.25 3.76.6.26 1.06.41 1.42.52.6.19 1.14.16 1.57.1.48-.07 1.47-.6 1.68-1.18.2-.58.2-1.07.14-1.18-.06-.1-.22-.16-.47-.28Z" fill="#fff" />
+    </svg>
+  );
 }
 
 export default function Onboarding() {
   const router = useRouter();
-  const [etapa, setEtapa] = useState("login"); // instalar | login | slides | quiz | foto | compromisso
-  const [deferido, setDeferido] = useState(null); // prompt de instalação (Android)
-  const [ios, setIos] = useState(false);
-  const [instalou, setInstalou] = useState(false); // Android: aceitou o prompt
+  const [etapa, setEtapa] = useState("login"); // login | slides | quiz | foto | compromisso
+  const [mostrarInstalar, setMostrarInstalar] = useState(false); // celular fora do app instalado
   const [slide, setSlide] = useState(0);
   const [q, setQ] = useState(0);
   const [email, setEmail] = useState("");
@@ -53,24 +47,12 @@ export default function Onboarding() {
     } catch (_) {}
   }, []);
 
-  // PASSO 0: no celular, ensina a instalar o app ANTES do login.
-  // Assim ela já entra direto pelo app instalado e o acesso fica salvo lá.
+  // No celular (fora do app instalado) mostra, logo abaixo do login, como instalar.
+  // O login vem PRIMEIRO: ela entra na hora; instalar é o passo seguinte, opcional.
   useEffect(() => {
-    if (estaInstalado() || !ehCelular()) return; // já é app (ou é computador) → vai direto ao login
-    setIos(ehIOS());
-    setEtapa("instalar");
-    const handler = (e) => { e.preventDefault(); setDeferido(e); };
-    window.addEventListener("beforeinstallprompt", handler);
-    return () => window.removeEventListener("beforeinstallprompt", handler);
+    if (estaInstalado() || !ehCelular()) return;
+    setMostrarInstalar(true);
   }, []);
-
-  async function instalarAndroid() {
-    if (!deferido) return;
-    deferido.prompt();
-    const { outcome } = await deferido.userChoice;
-    setDeferido(null);
-    if (outcome === "accepted") setInstalou(true);
-  }
 
   // Se já existe sessão + perfil, vai direto para a Home
   useEffect(() => {
@@ -147,150 +129,83 @@ export default function Onboarding() {
     router.replace("/");
   }
 
-  // PASSO 0 — Instalar o app ANTES de entrar (só no celular, fora do app instalado).
-  // Motivo: no iPhone, o app instalado não "herda" o login do Safari. Instalando
-  // primeiro, ela faz o login UMA vez só, já dentro do app.
-  if (etapa === "instalar") {
-    return (
-      <div className="relative max-w-md mx-auto min-h-dvh overflow-x-hidden" style={{ background: "#171d3d" }}>
-        <div className="hero-capa">
-          <img src="/capa.jpg" alt="NoctaLev — Seu sono. Seu melhor dia." />
-        </div>
-        <div className="relative z-10 px-6 pb-12 -mt-2">
-          <div className="eyebrow" style={{ color: "#fbd38d" }}>Passo 1 de 2</div>
-          <h1 className="text-[23px] font-extrabold tracking-tight mt-1">Primeiro, instale o app no seu celular</h1>
-          <p className="text-sub2 text-[14px] font-medium mt-2 leading-relaxed">
-            Assim o NoctaLev fica na sua tela de início, como qualquer app — e você entra <b className="text-gold">uma única vez</b>, sem precisar digitar o email de novo.
-          </p>
-
-          {instalou ? (
-            <div className="card p-5 mt-6 text-center" style={{ borderColor: "rgba(126,232,178,.4)" }}>
-              <div className="text-[34px]">🎉</div>
-              <div className="text-[15px] font-extrabold mt-2">App instalado!</div>
-              <p className="text-sub2 text-[13px] font-semibold mt-2 leading-relaxed">
-                Agora <b className="text-gold">feche esta página</b>, procure o ícone <b>🌙 NoctaLev</b> na sua tela de início e abra por lá para entrar. 💛
-              </p>
-            </div>
-          ) : ios ? (
-            <div className="card p-5 mt-6">
-              <div className="space-y-4">
-                {[
-                  { n: "1", t: <>Toque no botão <b className="text-gold">Compartilhar</b> <span className="inline-block px-1.5 py-0.5 rounded-md text-[12px]" style={{ background: "rgba(165,180,252,.15)", border: "1px solid rgba(165,180,252,.3)" }}>⬆️</span> na barra do Safari (embaixo, no meio)</> },
-                  { n: "2", t: <>Role a lista e toque em <b className="text-gold">"Adicionar à Tela de Início"</b> <span className="inline-block px-1.5 py-0.5 rounded-md text-[12px]" style={{ background: "rgba(165,180,252,.15)", border: "1px solid rgba(165,180,252,.3)" }}>➕</span></> },
-                  { n: "3", t: <>Toque em <b className="text-gold">"Adicionar"</b> no canto superior direito</> },
-                  { n: "4", t: <>Abra o app <b className="text-gold">🌙 NoctaLev</b> que apareceu na sua tela — e faça seu acesso por lá 💛</> },
-                ].map((p) => (
-                  <div key={p.n} className="flex gap-3 items-start">
-                    <div className="w-7 h-7 flex-none rounded-full flex items-center justify-center text-[13px] font-black text-[#3c2a10]"
-                      style={{ background: "linear-gradient(135deg,#fbd38d,#f6ad55)" }}>{p.n}</div>
-                    <div className="text-[13.5px] text-sub2 font-semibold leading-relaxed">{p.t}</div>
-                  </div>
-                ))}
-              </div>
-              <div className="rounded-xl p-3 mt-4 text-[11.5px] text-sub font-semibold leading-relaxed" style={{ background: "rgba(255,255,255,.03)" }}>
-                💡 No iPhone, isso só funciona pelo <b className="text-sub2">Safari</b>. Se você abriu pelo Instagram ou outro app, toque nos 3 pontinhos e escolha "Abrir no Safari" primeiro.
-              </div>
-            </div>
-          ) : (
-            <div className="mt-6">
-              {deferido ? (
-                <button onClick={instalarAndroid} className="cta-gold w-full py-4 text-[16px]">
-                  📲 Instalar o app agora (1 toque)
-                </button>
-              ) : (
-                <div className="card p-5">
-                  <div className="space-y-4">
-                    {[
-                      { n: "1", t: <>Toque nos <b className="text-gold">3 pontinhos ⋮</b> no canto superior direito do navegador</> },
-                      { n: "2", t: <>Toque em <b className="text-gold">"Adicionar à tela inicial"</b> (ou "Instalar aplicativo")</> },
-                      { n: "3", t: <>Confirme — e abra o app <b className="text-gold">🌙 NoctaLev</b> pela sua tela de início 💛</> },
-                    ].map((p) => (
-                      <div key={p.n} className="flex gap-3 items-start">
-                        <div className="w-7 h-7 flex-none rounded-full flex items-center justify-center text-[13px] font-black text-[#3c2a10]"
-                          style={{ background: "linear-gradient(135deg,#fbd38d,#f6ad55)" }}>{p.n}</div>
-                        <div className="text-[13.5px] text-sub2 font-semibold leading-relaxed">{p.t}</div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
-          <button onClick={() => setEtapa("login")} className="w-full mt-5 py-3 text-[13.5px] font-bold text-sub text-center">
-            {instalou ? "Ou continuar por aqui mesmo" : "Prefiro continuar sem instalar"}
-          </button>
-
-          <a href={"https://wa.me/5554920011946?text=" + encodeURIComponent("Olá! Estou tentando instalar o app NoctaLev no meu celular e preciso de ajuda. 💛")}
-            target="_blank" rel="noreferrer"
-            className="card flex items-center gap-3 mt-2 p-4 active:opacity-80"
-            style={{ borderColor: "rgba(126,232,178,.35)" }}>
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" className="flex-none">
-              <path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5.1-1.3A10 10 0 1 0 12 2Z" fill="#25D366" />
-              <path d="M16.6 13.8c-.25-.13-1.47-.72-1.7-.8-.23-.09-.4-.13-.56.12-.17.25-.64.8-.79.97-.14.17-.29.19-.54.06a6.7 6.7 0 0 1-3.35-2.93c-.25-.43.25-.4.72-1.34.08-.17.04-.31-.02-.44-.06-.12-.56-1.35-.77-1.85-.2-.48-.4-.42-.56-.43h-.48c-.17 0-.44.06-.66.31-.23.25-.87.85-.87 2.07 0 1.22.9 2.4 1.02 2.57.12.17 1.76 2.68 4.25 3.76.6.26 1.06.41 1.42.52.6.19 1.14.16 1.57.1.48-.07 1.47-.6 1.68-1.18.2-.58.2-1.07.14-1.18-.06-.1-.22-.16-.47-.28Z" fill="#fff" />
-            </svg>
-            <div className="flex-1">
-              <div className="text-[14px] font-extrabold">Precisa de ajuda para instalar?</div>
-              <div className="text-[12px] text-sub2 font-semibold mt-0.5">Fale com a gente no WhatsApp 💛</div>
-            </div>
-            <span className="text-green text-[18px]">›</span>
-          </a>
-        </div>
-      </div>
-    );
-  }
-
-  // Tela de entrada com a capa oficial (imagem já contém a marca)
+  // ===== Tela de entrada =====
+  // 1) capa compacta com a marca  2) acesso pelo email (na primeira dobra)
+  // 3) como instalar o app (passo a passo atualizado, só no celular)  4) ajuda
   if (etapa === "login") {
+    const emailOk = email.includes("@");
     return (
       <div className="relative max-w-md mx-auto min-h-dvh overflow-x-hidden" style={{ background: "#171d3d" }}>
         <div className="sticky top-0 z-30 w-full text-center px-4 py-2"
-          style={{ background: "#15803d", boxShadow: "0 2px 10px rgba(0,0,0,.35)" }}>
+          style={{ background: "#15803d", boxShadow: "0 2px 10px rgba(0,0,0,.35)", paddingTop: "calc(env(safe-area-inset-top, 0px) + 8px)" }}>
           <span className="text-[12.5px] font-bold text-white">
             ✅ Compra confirmada — seu acesso já está liberado.
           </span>
         </div>
-        <div className="hero-capa">
+
+        <div className="hero-capa compacta">
           <img src="/capa.jpg" alt="NoctaLev — Seu sono. Seu melhor dia." />
         </div>
-        <div className="relative z-10 px-6 pb-12 -mt-2">
-          <h1 className="text-[23px] font-extrabold tracking-tight">Bem-vinda ao seu protocolo</h1>
-          <p className="text-sub2 text-[14px] font-medium mt-1.5 leading-relaxed">
-            Entre com o email usado na sua compra.<br />Sem senha e sem código — acesso imediato.
-          </p>
-          <div className="mt-6">
-            <input type="email" inputMode="email" autoComplete="email" placeholder="Seu email da compra" value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter" && email.includes("@") && !enviando) entrar(); }}
-              className="w-full px-4 py-4 text-[16px] font-semibold" />
-            <p className="text-sub text-[12px] font-semibold mt-2 px-1">
+
+        <div className="relative z-10 px-5 pb-12 -mt-6 stagger">
+          {/* ---- BLOCO 1: acesso ---- */}
+          <section className="card p-5" style={{ background: "rgba(16,20,44,.92)", borderColor: "rgba(251,211,141,.28)", boxShadow: "0 12px 40px rgba(0,0,0,.35)" }}>
+            <div className="eyebrow" style={{ color: "#fbd38d" }}>Seu acesso</div>
+            <h1 className="text-[22px] font-extrabold tracking-tight mt-1 leading-tight">Bem-vinda ao seu protocolo</h1>
+            <p className="text-sub2 text-[13.5px] font-medium mt-1.5 leading-relaxed">
+              Digite o email usado na compra. Sem senha e sem código — você entra na hora.
+            </p>
+
+            <label className="block mt-4">
+              <span className="sr-only">Email da compra</span>
+              <input type="email" inputMode="email" autoComplete="email" autoCapitalize="none" autoCorrect="off" spellCheck={false}
+                placeholder="seuemail@exemplo.com" value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter" && emailOk && !enviando) entrar(); }}
+                className="w-full px-4 py-4 text-[16px] font-semibold" />
+            </label>
+
+            {erro && (
+              <div className="rounded-[14px] p-3.5 mt-3 text-[13px] font-bold text-[#ffb4b4] leading-relaxed"
+                style={{ background: "rgba(229,115,115,.12)", border: "1px solid rgba(229,115,115,.35)" }}>{erro}</div>
+            )}
+
+            <button disabled={!emailOk || enviando} onClick={entrar}
+              className="cta-gold w-full py-4 mt-3.5 text-[16px] disabled:opacity-40">
+              {enviando ? "Entrando..." : "Entrar no app →"}
+            </button>
+            <p className="text-sub text-[12px] font-semibold text-center mt-3 leading-relaxed">
               💡 Use exatamente o e-mail que você digitou no pagamento.
             </p>
-          </div>
-          {erro && <div className="card p-3.5 mt-4 text-[13px] font-bold text-[#e57373] leading-relaxed">{erro}</div>}
-          <button disabled={!email.includes("@") || enviando}
-            onClick={entrar}
-            className="cta-gold w-full py-4 mt-5 text-[16px] disabled:opacity-40">
-            {enviando ? "Entrando..." : "Entrar"}
-          </button>
-          <p className="text-sub text-[12px] font-semibold text-center mt-5">
-            Acesso liberado automaticamente após a compra.
-          </p>
+          </section>
 
+          {/* ---- BLOCO 2: instalar o app (só celular, fora do app) ---- */}
+          {mostrarInstalar && (
+            <div className="mt-5">
+              <div className="flex items-center gap-2 px-1 mb-2.5">
+                <div className="eyebrow">Depois de entrar</div>
+                <div className="flex-1 h-px" style={{ background: "rgba(165,180,252,.14)" }} />
+              </div>
+              <PassosInstalar titulo="Instale o app no seu celular" />
+            </div>
+          )}
+
+          {/* ---- BLOCO 3: ajuda ---- */}
           <a href={"https://wa.me/5554920011946?text=" + encodeURIComponent("Olá! Comprei o Protocolo Noturno NoctaLev e preciso de ajuda para entrar no app. 💛")}
             target="_blank" rel="noreferrer"
-            className="card flex items-center gap-3 mt-6 p-4 active:opacity-80"
-            style={{ borderColor: "rgba(126,232,178,.35)" }}>
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" className="flex-none">
-              <path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5.1-1.3A10 10 0 1 0 12 2Z" fill="#25D366" />
-              <path d="M16.6 13.8c-.25-.13-1.47-.72-1.7-.8-.23-.09-.4-.13-.56.12-.17.25-.64.8-.79.97-.14.17-.29.19-.54.06a6.7 6.7 0 0 1-3.35-2.93c-.25-.43.25-.4.72-1.34.08-.17.04-.31-.02-.44-.06-.12-.56-1.35-.77-1.85-.2-.48-.4-.42-.56-.43h-.48c-.17 0-.44.06-.66.31-.23.25-.87.85-.87 2.07 0 1.22.9 2.4 1.02 2.57.12.17 1.76 2.68 4.25 3.76.6.26 1.06.41 1.42.52.6.19 1.14.16 1.57.1.48-.07 1.47-.6 1.68-1.18.2-.58.2-1.07.14-1.18-.06-.1-.22-.16-.47-.28Z" fill="#fff" />
-            </svg>
-            <div className="flex-1">
+            className="card flex items-center gap-3 mt-5 p-4 active:opacity-80"
+            style={{ borderColor: "rgba(126,232,178,.3)" }}>
+            <IconWhats size={26} />
+            <div className="flex-1 min-w-0">
               <div className="text-[14px] font-extrabold">Não está conseguindo entrar?</div>
-              <div className="text-[12px] text-sub2 font-semibold mt-0.5">Fale com a gente no WhatsApp — ajudamos você em cada passo 💛</div>
+              <div className="text-[12px] text-sub2 font-semibold mt-0.5 leading-snug">Fale com a gente no WhatsApp — ajudamos em cada passo 💛</div>
             </div>
             <span className="text-green text-[18px]">›</span>
           </a>
+
+          <p className="text-sub text-[11.5px] font-semibold text-center mt-6 leading-relaxed">
+            Acesso liberado automaticamente após a compra.<br />Seus dados ficam protegidos e sincronizados na nuvem.
+          </p>
         </div>
       </div>
     );
