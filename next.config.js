@@ -2,6 +2,11 @@
 module.exports = {
   reactStrictMode: true,
 
+  // Studio (edição de fotos) foi removido do app — links antigos voltam para a Home
+  async redirects() {
+    return [{ source: "/studio", destination: "/", permanent: true }];
+  },
+
   // ===== 5.4 — headers de segurança e cache profissional =====
   async headers() {
     return [
