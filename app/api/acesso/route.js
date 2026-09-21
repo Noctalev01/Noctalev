@@ -2,6 +2,7 @@
 // Se GATE_BY_PURCHASE=false, todo email é aceito (fase de testes).
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "../../../lib/supabaseAdmin";
+import { pedidosPagosPorEmail, liberarPedidoNoApp } from "../../../lib/cakto";
 
 export const dynamic = "force-dynamic";
 
@@ -18,7 +19,14 @@ export async function POST(req) {
   const db = supabaseAdmin();
   if (!db) return NextResponse.json({ permitido: true }); // fallback: não travar
 
-  const { data } = await db.from("compradoras").select("email").eq("email", email).maybeSingle();
+  let { data } = await db.from("compradoras").select("email").eq("email", email).maybeSingle();
+  if (!data) {
+    // fallback automático: consulta a Cakto — se comprou, libera na hora
+    try {
+      const pedidos = await pedidosPagosPorEmail(db, email);
+      for (const p of pedidos) { if (await liberarPedidoNoApp(db, p)) data = { email }; }
+    } catch {}
+  }
   return NextResponse.json({
     permitido: !!data,
     motivo: data ? null : "Não encontramos uma compra com este email. Use o mesmo email da compra ou fale com o suporte.",

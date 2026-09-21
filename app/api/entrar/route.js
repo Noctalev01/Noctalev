@@ -6,6 +6,7 @@
 // Se GATE_BY_PURCHASE=false, qualquer email entra (modo testes).
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "../../../lib/supabaseAdmin";
+import { pedidosPagosPorEmail, liberarPedidoNoApp } from "../../../lib/cakto";
 
 export const dynamic = "force-dynamic";
 
@@ -22,13 +23,29 @@ export async function POST(req) {
 
   // 1) Gate de compra (só quem comprou na Cakto entra)
   //    Reembolso remove a linha de compradoras (via webhook), então basta checar existência.
+  //    FALLBACK AUTOMÁTICO: se o email não está na lista (webhook não pegou — ex.: produto/
+  //    variante criado antes de configurar o webhook), consulta a API oficial da Cakto na hora.
+  //    Se há pedido pago, libera e deixa entrar — sem precisar de ninguém do suporte.
   if (process.env.GATE_BY_PURCHASE === "true") {
     const { data: compra } = await db.from("compradoras").select("email").eq("email", email).maybeSingle();
     if (!compra) {
-      return NextResponse.json({
-        ok: false,
-        motivo: "Não encontramos uma compra com este email. Use o MESMO email da compra na Cakto ou fale com o suporte. 💛",
-      }, { status: 403 });
+      let liberouAgora = false;
+      try {
+        const pedidos = await pedidosPagosPorEmail(db, email);
+        for (const p of pedidos) {
+          const r = await liberarPedidoNoApp(db, p);
+          if (r) liberouAgora = true;
+        }
+      } catch (e) {
+        // Cakto fora do ar / sem credenciais → segue para a recusa normal
+        console.error("[entrar] fallback Cakto falhou:", e?.message || e);
+      }
+      if (!liberouAgora) {
+        return NextResponse.json({
+          ok: false,
+          motivo: "Não encontramos uma compra com este email. Use o MESMO email da compra na Cakto ou fale com o suporte. 💛",
+        }, { status: 403 });
+      }
     }
   }
 

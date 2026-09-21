@@ -73,6 +73,9 @@ export default function Admin() {
   const [importandoCakto, setImportandoCakto] = useState(false);
   const [pedirCredCakto, setPedirCredCakto] = useState(false);
   const [credCakto, setCredCakto] = useState({ clientId: "", clientSecret: "" });
+  const [resultadoSync, setResultadoSync] = useState(null); // resumo da última sincronização com a Cakto
+  const [verificando, setVerificando] = useState(false);
+  const [resultadoVerif, setResultadoVerif] = useState(null); // resultado de "verificar 1 email na Cakto"
   const [cfg, setCfg] = useState(null); // configurações globais (progressão/checkout/suporte)
 
   useEffect(() => {
@@ -146,7 +149,7 @@ export default function Admin() {
   async function importarCakto() {
     setImportandoCakto(true);
     try {
-      const corpo = { pin, acao: "importar_cakto" };
+      const corpo = { pin, acao: "sincronizar_cakto" };
       if (credCakto.clientId.trim() && credCakto.clientSecret.trim()) {
         corpo.clientId = credCakto.clientId.trim();
         corpo.clientSecret = credCakto.clientSecret.trim();
@@ -157,7 +160,10 @@ export default function Admin() {
       });
       const j = await r.json();
       if (j.ok) {
-        flash(`✅ ${j.compradoras} compradoras · ${j.telefonesNovos} telefones novos${j.semTelefone ? ` · ${j.semTelefone} sem telefone na Cakto` : ""}`);
+        setResultadoSync(j);
+        flash(j.liberadasAgora
+          ? `✅ ${j.liberadasAgora} acesso(s) NOVO(S) liberado(s) · ${j.compradoras} compradoras no total`
+          : `✅ Tudo em dia — ${j.compradoras} compradoras já liberadas`);
         setPedirCredCakto(false);
         setCredCakto({ clientId: "", clientSecret: "" });
         recarregar();
@@ -171,6 +177,26 @@ export default function Admin() {
       flash("Erro de conexão — tente de novo");
     }
     setImportandoCakto(false);
+  }
+
+  // 🔎 verifica UM email direto na Cakto e libera se houver compra paga
+  async function verificarNaCakto() {
+    const em = emailNova.trim().toLowerCase();
+    if (!em.includes("@")) return;
+    setVerificando(true); setResultadoVerif(null);
+    try {
+      const r = await fetch("/api/admin", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pin, acao: "verificar_cakto", email: em }),
+      });
+      const j = await r.json();
+      if (j.ok) {
+        setResultadoVerif({ email: em, ...j });
+        if (j.encontrado) { flash("✅ Compra encontrada na Cakto — acesso liberado"); recarregar(); }
+        else flash("Nenhuma compra paga com este email na Cakto");
+      } else flash("Erro: " + (j.error || "?"));
+    } catch { flash("Erro de conexão — tente de novo"); }
+    setVerificando(false);
   }
 
   async function abrirDetalhe(id) {
@@ -343,8 +369,34 @@ export default function Admin() {
               <div className="mb-3">
                 <button onClick={importarCakto} disabled={importandoCakto}
                   className="w-full rounded-xl py-2.5 text-[13px] font-extrabold border border-[#7ee8b2]/40 bg-[#7ee8b2]/10 text-[#7ee8b2] disabled:opacity-50">
-                  {importandoCakto ? "Importando da Cakto… ⏳" : "⬇️ Importar telefones da Cakto (1 toque)"}
+                  {importandoCakto ? "Sincronizando com a Cakto… ⏳" : "🔄 Sincronizar com a Cakto — liberar acesso de todas as compras (1 toque)"}
                 </button>
+                <p className="text-sub text-[11px] font-semibold mt-1.5 leading-relaxed px-1">
+                  Puxa <b className="text-txt">todas as vendas pagas</b> da Cakto (todos os produtos e variantes, inclusive as feitas
+                  antes do webhook) e libera o acesso de quem ainda não estava na lista. Também importa nome e telefone. Pode repetir à vontade.
+                </p>
+                {resultadoSync && (
+                  <div className="mt-2 rounded-xl border border-[#7ee8b2]/30 bg-[#7ee8b2]/5 p-3">
+                    <div className="text-[12.5px] font-extrabold">
+                      {resultadoSync.liberadasAgora
+                        ? `🎉 ${resultadoSync.liberadasAgora} acesso(s) novo(s) liberado(s) agora`
+                        : "✅ Nenhum acesso pendente — todo mundo que pagou já entra"}
+                    </div>
+                    <div className="text-[11px] text-sub font-semibold mt-1">
+                      {resultadoSync.compradoras} compradoras · pedidos: {resultadoSync.porProduto?.fase1 || 0} principal · {resultadoSync.porProduto?.fase2 || 0} Fase 2 · {resultadoSync.porProduto?.fase3 || 0} Fase 3 · {resultadoSync.porProduto?.studio || 0} Studio
+                      {resultadoSync.telefonesNovos ? ` · ${resultadoSync.telefonesNovos} telefones novos` : ""}
+                    </div>
+                    {(resultadoSync.novas || []).length > 0 && (
+                      <div className="mt-2 space-y-1">
+                        {resultadoSync.novas.map((n) => (
+                          <div key={n.email} className="text-[11px] font-semibold text-sub2 truncate">
+                            • {n.nome || n.email} <span className="text-sub">({n.email}{n.valor ? ` · R$ ${n.valor}` : ""}{n.pagoEm ? ` · ${String(n.pagoEm).slice(0, 10)}` : ""})</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
                 {pedirCredCakto && (
                   <div className="mt-2 rounded-xl border border-[#fbd38d]/30 bg-[#fbd38d]/5 p-3 space-y-2">
                     <p className="text-[11.5px] text-sub font-semibold leading-relaxed">
@@ -694,9 +746,11 @@ export default function Admin() {
         {tab === "acesso" && (
           <Section title="🔑 Liberar acesso manual (email de compradora)">
             <p className="text-sub text-[12.5px] font-semibold mb-3 leading-relaxed">
-              A Cakto libera automaticamente pelo webhook. Use aqui apenas para liberar alguém manualmente
-              (ex: compra por outro canal, suporte). Quando o gate de compra estiver ativado (GATE_BY_PURCHASE=true),
-              só emails desta lista conseguem entrar no app.
+              <b className="text-txt">Como o acesso é liberado (automático, 3 camadas):</b><br />
+              1️⃣ <b className="text-txt">Webhook da Cakto</b> — na hora da compra, qualquer produto/variante (o principal, a variante de R$ 94, Fase 2, Fase 3, Studio).<br />
+              2️⃣ <b className="text-txt">Na hora do login</b> — se o email não está na lista, o app consulta a Cakto direto e libera sozinho se houver compra paga.<br />
+              3️⃣ <b className="text-txt">Sincronizar</b> (aba Compradoras) — puxa tudo retroativo, para quem comprou antes do webhook existir.<br />
+              Use os botões abaixo só para casos especiais (compra por outro canal, suporte).
             </p>
             <div className="flex gap-2">
               <input type="email" value={emailNova} onChange={(e) => setEmailNova(e.target.value)} placeholder="email@dacliente.com"
@@ -704,6 +758,25 @@ export default function Admin() {
               <button onClick={() => { if (emailNova.includes("@")) { acao("add_compradora", { email: emailNova }); setEmailNova(""); } }}
                 className="cta-gold px-4 text-[13.5px]">Liberar</button>
             </div>
+            <button onClick={verificarNaCakto} disabled={verificando || !emailNova.includes("@")}
+              className="w-full mt-2 rounded-xl py-2.5 text-[13px] font-extrabold border border-[#a5b4fc]/40 bg-[#a5b4fc]/10 text-[#a5b4fc] disabled:opacity-40">
+              {verificando ? "Consultando a Cakto… ⏳" : "🔎 Verificar este email na Cakto e liberar se comprou"}
+            </button>
+            {resultadoVerif && (
+              <div className="mt-2 rounded-xl p-3 text-[12px] font-semibold leading-relaxed"
+                style={{ background: resultadoVerif.encontrado ? "rgba(126,232,178,.07)" : "rgba(229,115,115,.08)", border: `1px solid ${resultadoVerif.encontrado ? "rgba(126,232,178,.3)" : "rgba(229,115,115,.35)"}` }}>
+                {resultadoVerif.encontrado ? (
+                  <>
+                    <div className="text-green font-extrabold">✅ {resultadoVerif.email} comprou na Cakto — acesso liberado</div>
+                    {(resultadoVerif.pedidos || []).map((p, i) => (
+                      <div key={i} className="text-sub2 mt-1">• {p.nomeProduto || p.produto}{p.valor ? ` · R$ ${p.valor}` : ""}{p.pagoEm ? ` · pago em ${String(p.pagoEm).slice(0, 10)}` : ""}{p.novo ? " · NOVO" : " · já estava liberado"}</div>
+                    ))}
+                  </>
+                ) : (
+                  <div className="text-[#e57373]">❌ Nenhuma compra paga com <b>{resultadoVerif.email}</b> na Cakto. Confira se ela usou outro email no pagamento.</div>
+                )}
+              </div>
+            )}
           </Section>
         )}
       </div>

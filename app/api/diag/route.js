@@ -11,6 +11,9 @@ const ESPERADAS = [
   "ADMIN_PIN",
   "CAKTO_WEBHOOK_SECRET",
   "GATE_BY_PURCHASE",
+  "CAKTO_CLIENT_ID",
+  "CAKTO_CLIENT_SECRET",
+  "CRON_SECRET",
 ];
 
 export async function GET() {
