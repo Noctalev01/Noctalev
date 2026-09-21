@@ -61,6 +61,8 @@ function extrairProduto(item) {
   // reconhece pelo nome OU pelo código da oferta na Cakto (dupla garantia)
   if (nome.includes("fase 3") || nome.includes("fase3") || offerId.includes("t2tvh6v")) return "fase3";
   if (nome.includes("fase 2") || nome.includes("fase2") || offerId.includes("3ep394x")) return "fase2";
+  // QUALQUER outro produto/oferta/variante (ex.: o teste a R$ 94, nomes novos, preços
+  // diferentes) = acesso principal ao app. Não precisa cadastrar nada aqui ao criar variantes.
   return "fase1";
 }
 
