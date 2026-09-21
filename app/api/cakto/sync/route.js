@@ -1,11 +1,12 @@
 // ============================================================
 // SINCRONIZAÇÃO AUTOMÁTICA COM A CAKTO (rede de segurança do webhook)
 //
-// Roda a cada hora pelo cron da Vercel (vercel.json). Puxa os pedidos pagos
-// das últimas horas na API oficial da Cakto e libera o acesso de qualquer
+// Roda 1x por dia pelo cron da Vercel (vercel.json — o plano Hobby só permite
+// cron diário; deploys com cron mais frequente FALHAM). Puxa os pedidos pagos
+// dos últimos dias na API oficial da Cakto e libera o acesso de qualquer
 // compradora que ainda não esteja na lista — qualquer produto/variante.
-// Assim, mesmo que o webhook falhe ou uma variante nova seja criada sem
-// avisar ninguém, o acesso sai automaticamente em até 1 hora.
+// O "tempo real" fica por conta do webhook + do fallback no login (/api/entrar),
+// que consulta a Cakto na hora se o email não estiver na lista.
 //
 // ?completo=1 → varre TODO o histórico (útil uma vez, ou pelo botão do admin)
 // Segurança: header "Authorization: Bearer CRON_SECRET" (Vercel envia) ou ?pin=ADMIN_PIN
@@ -35,8 +36,8 @@ export async function GET(req) {
   try {
     const token = await tokenCakto(cred.clientId, cred.clientSecret);
     const completo = url.searchParams.get("completo") === "1";
-    // janela: últimas 36h (folga generosa para o cron de 1h) — ou tudo, se completo
-    const desde = new Date(Date.now() - 36 * 3600 * 1000).toISOString().slice(0, 19);
+    // janela: últimos 3 dias (folga generosa para o cron diário) — ou tudo, se completo
+    const desde = new Date(Date.now() - 3 * 24 * 3600 * 1000).toISOString().slice(0, 19);
     let urlPag = `https://api.cakto.com.br/public_api/orders/?status=paid,in_settlement,authorized,partially_paid&limit=100&ordering=-paidAt`
       + (completo ? "" : `&updatedAt__gte=${encodeURIComponent(desde)}`);
 

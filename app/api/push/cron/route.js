@@ -48,15 +48,20 @@ export async function GET(req) {
 
   // quem já fez check-in / ritual hoje (para personalizar ou pular)
   const userIds = [...new Set(subs.map((s) => s.user_id).filter(Boolean))];
-  let fezCheckin = new Set(), fezRitual = new Set();
+  let fezCheckin = new Set(), fezRitual = new Set(), fase2Pendente = new Set();
   if (userIds.length) {
-    const [{ data: cks }, { data: rits }] = await Promise.all([
+    const [{ data: cks }, { data: rits }, { data: profs }] = await Promise.all([
       db.from("checkins").select("user_id").eq("data", hoje).in("user_id", userIds),
       db.from("rituais").select("user_id").eq("data", hoje).in("user_id", userIds),
+      // Fase 2 liberada (corpo pronto), celebração vista, mas NÃO paga → lembrar
+      db.from("profiles").select("id").in("id", userIds).not("fase2_liberada_em", "is", null).eq("celebracao_vista", true).eq("fase2_paga", false),
     ]);
     fezCheckin = new Set((cks || []).map((c) => c.user_id));
     fezRitual = new Set((rits || []).map((r) => r.user_id));
+    fase2Pendente = new Set((profs || []).map((p) => p.id));
   }
+  // lembrete da Fase 2 em dias alternados (não vira spam): dia par do mês
+  const lembrarF2Hoje = Number(hoje.slice(-2)) % 2 === 0;
 
   let enviadas = 0, removidas = 0, puladas = 0;
   const frase = fraseDeHoje();
@@ -70,8 +75,14 @@ export async function GET(req) {
         ? { title: `💛 Sua frase de hoje${nome}`, body: frase, url: "/" }
         : { title: `☀️ Bom dia${nome}!`, body: `${frase}\nRegistre sua noite em poucos toques (+10 pontos ⭐)`, url: "/checkin" };
     } else {
-      if (sub.user_id && fezRitual.has(sub.user_id)) { puladas++; continue; } // já fez o ritual → não incomoda
-      payload = { title: `🍵 Hora do seu chá da noite${nome}`, body: "Seu chá morno + luz baixa. Leva 3 minutinhos e vale +5 pontos ⭐", url: "/ritual" };
+      if (sub.user_id && fezRitual.has(sub.user_id)) {
+        // já fez o ritual → só incomoda se a Fase 2 está pronta e ela ainda não desbloqueou
+        if (lembrarF2Hoje && fase2Pendente.has(sub.user_id)) {
+          payload = { title: `☀️ Sua Fase 2 está pronta${nome}`, body: "Seu corpo respondeu à Fase 1. O Shot Termo-Metabólico ataca a fome da tarde — desbloqueie quando quiser.", url: "/fase2" };
+        } else { puladas++; continue; }
+      } else {
+        payload = { title: `🍵 Hora do seu chá da noite${nome}`, body: "Seu chá morno + luz baixa. Leva 3 minutinhos e vale +5 pontos ⭐", url: "/ritual" };
+      }
     }
 
     try {

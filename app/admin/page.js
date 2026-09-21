@@ -383,7 +383,7 @@ export default function Admin() {
                         : "✅ Nenhum acesso pendente — todo mundo que pagou já entra"}
                     </div>
                     <div className="text-[11px] text-sub font-semibold mt-1">
-                      {resultadoSync.compradoras} compradoras · pedidos: {resultadoSync.porProduto?.fase1 || 0} principal · {resultadoSync.porProduto?.fase2 || 0} Fase 2 · {resultadoSync.porProduto?.fase3 || 0} Fase 3 · {resultadoSync.porProduto?.studio || 0} Studio
+                      {resultadoSync.compradoras} compradoras · pedidos: {resultadoSync.porProduto?.fase1 || 0} principal · {resultadoSync.porProduto?.fase2 || 0} Fase 2 · {resultadoSync.porProduto?.fase3 || 0} Fase 3
                       {resultadoSync.telefonesNovos ? ` · ${resultadoSync.telefonesNovos} telefones novos` : ""}
                     </div>
                     {(resultadoSync.novas || []).length > 0 && (
@@ -747,7 +747,7 @@ export default function Admin() {
           <Section title="🔑 Liberar acesso manual (email de compradora)">
             <p className="text-sub text-[12.5px] font-semibold mb-3 leading-relaxed">
               <b className="text-txt">Como o acesso é liberado (automático, 3 camadas):</b><br />
-              1️⃣ <b className="text-txt">Webhook da Cakto</b> — na hora da compra, qualquer produto/variante (o principal, a variante de R$ 94, Fase 2, Fase 3, Studio).<br />
+              1️⃣ <b className="text-txt">Webhook da Cakto</b> — na hora da compra, qualquer produto/variante (o principal, a variante de R$ 94, Fase 2, Fase 3).<br />
               2️⃣ <b className="text-txt">Na hora do login</b> — se o email não está na lista, o app consulta a Cakto direto e libera sozinho se houver compra paga.<br />
               3️⃣ <b className="text-txt">Sincronizar</b> (aba Compradoras) — puxa tudo retroativo, para quem comprou antes do webhook existir.<br />
               Use os botões abaixo só para casos especiais (compra por outro canal, suporte).

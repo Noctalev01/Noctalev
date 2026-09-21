@@ -8,6 +8,7 @@ import { vibrar } from "../../components/ui";
 import { syncNow } from "../../lib/sync";
 import { FASE1, FASE2_TEASER, FASE3_TEASER } from "../../lib/receitas";
 import { Icone } from "../../components/icones";
+import { CardFase2Pronta } from "../../components/LembreteFase2";
 
 export default function Receita() {
   const router = useRouter();
@@ -214,22 +215,18 @@ export default function Receita() {
       </div>
 
       {/* fases bloqueadas / liberadas para conhecer */}
-      {prog.liberada && !s.fase2Paga ? (
-        // corpo pronto → cartão vira convite para a introdução da Fase 2
-        <Link href="/fase2" className="card block mt-5 overflow-hidden" style={{ padding: 0, border: "1px solid rgba(251,211,141,.4)" }}>
-          <div className="relative h-[110px]">
-            <img src="/img/fase2-shot.jpg" alt="" className="w-full h-full object-cover" />
-            <div className="absolute inset-0" style={{ background: "linear-gradient(180deg, rgba(16,20,44,.2), rgba(16,20,44,.92))" }} />
-            <div className="absolute bottom-3 left-4 right-4 flex items-end justify-between">
-              <div className="text-[15px] font-extrabold">Fase 2 — {FASE2_TEASER.nome}</div>
-              <span className="text-[18px]">🔓</span>
-            </div>
+      {/* Fase 2: só abre para quem PAGOU. Liberada (corpo pronto) e não paga → card que leva ao pagamento */}
+      {s.fase2Paga ? (
+        <div className="card mt-5 p-5" style={{ border: "1px solid rgba(126,232,178,.4)" }}>
+          <div className="flex justify-between items-center">
+            <div className="text-[15px] font-extrabold">Fase 2 — {FASE2_TEASER.nome}</div>
+            <span className="text-[16px]">✅</span>
           </div>
-          <div className="p-[14px_18px_18px]">
-            <p className="text-[13px] text-green font-extrabold">✓ Seu corpo respondeu — a Fase 2 foi liberada!</p>
-            <p className="text-[13px] text-sub2 font-semibold mt-1 leading-relaxed">Toque para conhecer o Shot Termo-Metabólico →</p>
-          </div>
-        </Link>
+          <p className="text-[13px] text-green font-extrabold mt-2">Desbloqueada — é sua!</p>
+          <p className="text-[13px] text-sub2 font-semibold mt-1 leading-relaxed">{FASE2_TEASER.teaser}</p>
+        </div>
+      ) : prog.liberada ? (
+        <CardFase2Pronta />
       ) : (
         <div className="card mt-5 overflow-hidden opacity-95" style={{ padding: 0 }}>
           <div className="relative h-[110px]">
