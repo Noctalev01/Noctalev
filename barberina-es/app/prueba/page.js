@@ -13,7 +13,7 @@ export default function Prueba() {
 
   function diaGrupo(d) {
     aplicar((s) => {
-      if (!s.tel) { s.tel = "600000000"; s.pin = "1234"; }
+      if (!s.token) s.token = "demo";
       const ini = sumarDias(hoyMadrid(), -(d - 1));
       s.perfil = { nombre: "María J.", ciudad: "Madrid", pesoInicial: 82, objetivo: 8, avatar: "🌸", publico: true, ...s.perfil, creadoEn: ini };
       s.registros = { [ini]: { peso: s.perfil.pesoInicial } };

@@ -1,24 +1,22 @@
 "use client";
 // ============================================================
-// Barberina ES — estado local-first + sincronização Supabase (RPCs SQL-6/SQL-7)
-// Regra central: quase tudo fica BLOQUEADO até o frasco ser recebido
-// (pagamento contra-reembolso = só paga ao receber).
+// Barberina ES — estado local-first + Supabase (supabase/BARBERINA-ES-COMPLETO.sql)
+// Acesso: LINK PRÓPRIO /a/<token> (criado pela equipe) ou EMAIL em /entrar.
+// O nome vem pronto do banco — a clienta não digita nada.
+// Tudo fica BLOQUEADO até a equipe marcar o pedido como 'entregado'.
 // ============================================================
 import { supabase } from "./supabase";
-import { CONFIG } from "./config";
 import { hoyMadrid, diffDias, sumarDias, lunesDe } from "./fechas";
 
-const KEY = "barberina_es_v1";
+const KEY = "barberina_es_v2";
 
 function inicial() {
   return {
-    tel: null,
-    pin: null,
+    token: null,
     perfil: null, // {nombre, ciudad, pesoInicial, objetivo, altura, edad, avatar, publico, creadoEn}
-    frasco: { estado: "esperando", recibidoEn: null }, // "esperando" | "recibido"
+    frasco: { estado: "esperando", recibidoEn: null, envio: null },
     registros: {}, // { "2026-10-07": {peso, sueno, despertares, energia, antojos, tomo, nota} }
-    preparacion: {}, // checklist da espera { objetivo:true, instalar:true, consejo:true }
-    vistos: {}, // flags de UI (celebración vista etc.)
+    vistos: {},
   };
 }
 
@@ -37,89 +35,113 @@ export function save(s) {
   return s;
 }
 export function logout() {
-  try { localStorage.removeItem(KEY); } catch {}
+  try { localStorage.removeItem(KEY); localStorage.removeItem("barberina_es_v1"); } catch {}
 }
 
 export const frascoRecibido = (s) => s?.frasco?.estado === "recibido";
+export const hayBackend = () => !!supabase;
+// perfil completo = já informou o peso inicial (o nome vem do banco)
+export const perfilCompleto = (s) => !!(s?.perfil?.nombre && s?.perfil?.pesoInicial);
 
-// ---------------- teléfono / PIN ----------------
-export function normalizarTel(t) {
-  let d = String(t || "").replace(/\D/g, "");
-  if (d.startsWith("0034")) d = d.slice(4);
-  if (d.length === 11 && d.startsWith("34")) d = d.slice(2);
-  return d;
+// timeout para nenhuma chamada travar a tela
+function conTiempo(promesa, ms = 8000) {
+  return Promise.race([promesa, new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), ms))]);
 }
-export const telValido = (t) => /^[6789]\d{8}$/.test(normalizarTel(t));
-export const pinValido = (p) => /^\d{4}$/.test(String(p || ""));
-
-// Login: Supabase (RPC app_login) se configurado; senão local.
-export async function login(telRaw, pin) {
-  const tel = normalizarTel(telRaw);
-  if (!telValido(tel)) return { ok: false, error: "telefono" };
-  if (!pinValido(pin)) return { ok: false, error: "pin" };
-  let s = load();
-  // trocou de número neste aparelho → estado limpo
-  if (s.tel && s.tel !== tel) s = inicial();
-
-  if (supabase) {
-    try {
-      const { data, error } = await supabase.rpc("app_login", { p_tel: tel, p_pin: pin });
-      if (error) throw error;
-      if (!data?.ok) return { ok: false, error: data?.error || "pin_incorrecto" };
-      const u = data.usuaria || {};
-      s.tel = tel; s.pin = pin;
-      if (u.nombre && !s.perfil) {
-        s.perfil = {
-          nombre: u.nombre, ciudad: u.ciudad || "", pesoInicial: u.peso_inicial || null,
-          objetivo: u.objetivo || null, altura: u.altura || null, edad: u.edad || null,
-          avatar: u.avatar || "🌸", publico: u.publico !== false,
-          creadoEn: (u.created_at || u.creado_en || new Date().toISOString()).slice(0, 10),
-        };
-      }
-      // backend marcou entrega (crear_pedido / transportadora / Camila) → libera
-      if (u.frasco_recibido_em && !frascoRecibido(s)) {
-        s.frasco = { estado: "recibido", recibidoEn: String(u.frasco_recibido_em).slice(0, 10) };
-      }
-      save(s);
-      pullRegistros(); // segundo plano
-      return { ok: true, s };
-    } catch (e) {
-      // sem rede / SQL ainda não rodado → segue local (não trava a cliente)
-      console.warn("app_login falhou, modo local:", e?.message || e);
-    }
-  }
-  if (s.tel === tel && s.pin && s.pin !== pin) return { ok: false, error: "pin_incorrecto" };
-  s.tel = tel; s.pin = pin;
-  save(s);
-  return { ok: true, s };
-}
-
 async function rpc(nome, params) {
   if (!supabase) return null;
   try {
-    const { data, error } = await supabase.rpc(nome, params);
+    const { data, error } = await conTiempo(supabase.rpc(nome, params));
     if (error) throw error;
     return data;
   } catch (e) {
     console.warn(nome, "falhou:", e?.message || e);
-    return null;
+    return { __error: e?.message || String(e) };
   }
+}
+
+function aplicarClienta(s, c) {
+  s.perfil = {
+    ...(s.perfil || {}),
+    nombre: c.nombre,
+    ciudad: c.ciudad || s.perfil?.ciudad || "",
+    pesoInicial: c.peso_inicial != null ? Number(c.peso_inicial) : s.perfil?.pesoInicial || null,
+    objetivo: c.objetivo != null ? Number(c.objetivo) : s.perfil?.objetivo || null,
+    altura: c.altura != null ? Number(c.altura) : s.perfil?.altura || null,
+    edad: c.edad ?? s.perfil?.edad ?? null,
+    avatar: c.avatar || s.perfil?.avatar || "🌸",
+    publico: c.publico !== false,
+    creadoEn: String(c.creado_em || s.perfil?.creadoEn || new Date().toISOString()).slice(0, 10),
+  };
+  if (c.estado_envio === "entregado") {
+    s.frasco = { estado: "recibido", recibidoEn: String(c.entregado_em || new Date().toISOString()).slice(0, 10), envio: "entregado" };
+    // celebração só no dia da entrega (ao reentrar dias depois, não repete)
+    if (s.frasco.recibidoEn < hoyMadrid()) s.vistos = { ...s.vistos, recibido: true };
+  } else {
+    s.frasco = { estado: "esperando", recibidoEn: null, envio: c.estado_envio || null };
+  }
+  return s;
+}
+
+// ---------------- acesso ----------------
+const ERR = { link: "link", email: "email", cancelado: "cancelado" };
+
+export async function accederToken(token) {
+  token = String(token || "").trim();
+  if (!token) return { ok: false, error: "link" };
+  if (!supabase) {
+    // modo demonstração (sem Supabase configurado)
+    let s = load();
+    if (s.token !== token) s = inicial();
+    s.token = token;
+    if (!s.perfil) s.perfil = { nombre: "María J.", ciudad: "Madrid", avatar: "🌸", publico: true, creadoEn: hoyMadrid() };
+    save(s);
+    return { ok: true, s };
+  }
+  const r = await rpc("bm_acceso", { p_token: token });
+  if (!r || r.__error) return { ok: false, error: "red" };
+  if (!r.ok) return { ok: false, error: ERR[r.error] || "link" };
+  let s = load();
+  if (s.token !== token) s = inicial();
+  s.token = token;
+  aplicarClienta(s, r.clienta);
+  save(s);
+  await pullRegistros();
+  return { ok: true, s: load() };
+}
+
+export async function accederEmail(email) {
+  email = String(email || "").trim().toLowerCase();
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return { ok: false, error: "formato" };
+  if (!supabase) return accederToken("demo-" + email.split("@")[0]);
+  const r = await rpc("bm_acceso_email", { p_email: email });
+  if (!r || r.__error) return { ok: false, error: "red" };
+  if (!r.ok) return { ok: false, error: ERR[r.error] || "email" };
+  return accederToken(r.clienta.token);
+}
+
+// atualiza dados da clienta (nome, estado do envio) — chamado ao abrir
+export async function refrescarClienta() {
+  const s = load();
+  if (!s.token || !supabase) return { s };
+  const r = await rpc("bm_acceso", { p_token: s.token });
+  if (r?.ok) { aplicarClienta(s, r.clienta); save(s); }
+  return { s: load() };
 }
 
 async function pullRegistros() {
   const s = load();
-  if (!s.tel) return;
-  const rows = await rpc("app_mis_registros", { p_tel: s.tel, p_pin: s.pin });
+  if (!s.token || !supabase) return;
+  const rows = await rpc("bm_mis_registros", { p_token: s.token });
   if (!Array.isArray(rows)) return;
   const st = load();
   for (const r of rows) {
     const f = String(r.fecha).slice(0, 10);
-    if (!st.registros[f]) {
-      st.registros[f] = {
-        peso: r.peso != null ? Number(r.peso) : null, sueno: r.sueno, despertares: r.despertares,
-        energia: r.energia, antojos: r.antojos, tomo: r.tomo, nota: r.nota || "",
-      };
-    }
+    st.registros[f] = {
+      ...(st.registros[f] || {}),
+      peso: r.peso != null ? Number(r.peso) : st.registros[f]?.peso ?? null,
+      sueno: r.sueno ?? st.registros[f]?.sueno, despertares: r.despertares, energia: r.energia,
+      antojos: r.antojos, tomo: r.tomo, nota: r.nota || "",
+    };
   }
   save(st);
 }
@@ -127,52 +149,41 @@ async function pullRegistros() {
 // ---------------- perfil ----------------
 export function guardarPerfil(datos) {
   const s = load();
-  s.perfil = {
-    avatar: "🌸", publico: true, ...s.perfil, ...datos,
-    creadoEn: s.perfil?.creadoEn || hoyMadrid(),
-  };
+  s.perfil = { avatar: "🌸", publico: true, ...s.perfil, ...datos, creadoEn: s.perfil?.creadoEn || hoyMadrid() };
   save(s);
-  rpc("app_perfil", {
-    p_tel: s.tel, p_pin: s.pin, p_nombre: s.perfil.nombre, p_ciudad: s.perfil.ciudad,
-    p_objetivo: s.perfil.objetivo, p_altura: s.perfil.altura, p_edad: s.perfil.edad,
-    p_avatar: s.perfil.avatar, p_publico: s.perfil.publico,
+  rpc("bm_perfil", {
+    p_token: s.token, p_peso_inicial: s.perfil.pesoInicial ?? null, p_objetivo: s.perfil.objetivo ?? null,
+    p_altura: s.perfil.altura ?? null, p_edad: s.perfil.edad ?? null, p_avatar: s.perfil.avatar,
+    p_publico: s.perfil.publico, p_ciudad: s.perfil.ciudad || null,
   });
-  // peso inicial vira o 1º registro (só peso) — base da evolução
-  if (datos.pesoInicial && !Object.keys(s.registros).length) {
-    s.registros[hoyMadrid()] = { peso: datos.pesoInicial };
+  if (datos.pesoInicial && !Object.values(s.registros).some((r) => r.peso)) {
+    s.registros[hoyMadrid()] = { ...(s.registros[hoyMadrid()] || {}), peso: datos.pesoInicial };
     save(s);
-    rpc("app_registrar", { p_tel: s.tel, p_pin: s.pin, p_fecha: hoyMadrid(), p_peso: datos.pesoInicial });
+    rpc("bm_registrar", { p_token: s.token, p_fecha: hoyMadrid(), p_peso: datos.pesoInicial });
   }
   return s;
 }
 
-export function marcarPreparacion(clave) {
-  const s = load();
-  s.preparacion = { ...s.preparacion, [clave]: true };
-  return save(s);
-}
 export function marcarVisto(clave) {
   const s = load();
   s.vistos = { ...s.vistos, [clave]: true };
   return save(s);
 }
 
-// ---------------- frasco ----------------
-// A liberação é feita pela EQUIPE: quando a encomenda é entregue, grava-se
-// a entrega na tabela app_entregas do Supabase (ou app_usuarias.frasco_recibido_em).
-// O app consulta o RPC app_estado_entrega ao abrir e a cada 60 s — sem código.
+// ---------------- entrega ----------------
+// A EQUIPE marca 'entregado' em bm_clientas (bm_marcar_envio). O app consulta
+// bm_estado ao abrir, ao voltar ao app e a cada 60 s — sem código.
 export async function comprobarEntrega() {
   const s = load();
-  if (!s.tel || frascoRecibido(s)) return { recibido: frascoRecibido(s), s };
-  const r = await rpc("app_estado_entrega", { p_tel: s.tel, p_pin: s.pin });
+  if (!s.token || frascoRecibido(s) || !supabase) return { recibido: frascoRecibido(s), s };
+  const r = await rpc("bm_estado", { p_token: s.token });
   if (r?.ok && r.entregado) {
     const st = load();
-    st.frasco = { estado: "recibido", recibidoEn: String(r.entregado_em || new Date().toISOString()).slice(0, 10) };
+    st.frasco = { estado: "recibido", recibidoEn: String(r.entregado_em || new Date().toISOString()).slice(0, 10), envio: "entregado" };
     save(st);
     return { recibido: true, nuevo: true, s: st };
   }
-  // estado do envio informado pela equipe (opcional): preparando | enviado | reparto
-  if (r?.ok && r.estado) {
+  if (r?.ok) {
     const st = load();
     st.frasco = { ...st.frasco, envio: r.estado };
     save(st);
@@ -185,8 +196,8 @@ export function registrar(fecha, datos) {
   const s = load();
   s.registros[fecha] = { ...(s.registros[fecha] || {}), ...datos };
   save(s);
-  rpc("app_registrar", {
-    p_tel: s.tel, p_pin: s.pin, p_fecha: fecha,
+  rpc("bm_registrar", {
+    p_token: s.token, p_fecha: fecha,
     p_peso: datos.peso ?? null, p_sueno: datos.sueno ?? null, p_despertares: datos.despertares ?? null,
     p_energia: datos.energia ?? null, p_antojos: datos.antojos ?? null, p_tomo: datos.tomo ?? null,
     p_nota: datos.nota || null,

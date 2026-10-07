@@ -1,43 +1,41 @@
 "use client";
 import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { login, load, normalizarTel } from "../../lib/store";
+import { accederEmail, load, perfilCompleto } from "../../lib/store";
+import { linkCamila } from "../../lib/config";
 import { vibrar, Logo } from "../../components/ui";
 
 const ERRORES = {
-  telefono: "Revisa tu teléfono: son 9 dígitos (ej. 612 345 678).",
-  pin: "El PIN son 4 números.",
-  pin_incorrecto: "PIN incorrecto. Si no lo recuerdas, escribe a Camila por WhatsApp.",
+  formato: "Revisa tu email (ej. maria@gmail.com).",
+  email: "No encontramos un pedido con este email. Usa el mismo email de tu compra o el enlace que te enviamos.",
+  cancelado: "Este pedido figura como cancelado o devuelto.",
+  red: "No hemos podido conectar. Revisa tu conexión e inténtalo de nuevo.",
 };
 
 function Entrar() {
   const router = useRouter();
   const q = useSearchParams();
-  const [tel, setTel] = useState("");
-  const [pin, setPin] = useState("");
+  const [email, setEmail] = useState("");
   const [err, setErr] = useState("");
   const [cargando, setCargando] = useState(false);
 
   useEffect(() => {
+    const t = q.get("t") || q.get("token");
+    if (t) { router.replace(`/a/${t}`); return; }
     const s = load();
-    const t = q.get("tel");
-    if (t) setTel(normalizarTel(t));
-    else if (s.tel) setTel(s.tel);
-    if (s.tel && s.pin && (!t || normalizarTel(t) === s.tel)) router.replace(s.perfil?.nombre ? "/" : "/bienvenida");
+    if (s.token) router.replace(perfilCompleto(s) ? "/" : "/bienvenida");
   }, [q, router]);
 
   async function entrar(e) {
     e.preventDefault();
     setErr("");
     setCargando(true);
-    const r = await login(tel, pin);
+    const r = await accederEmail(email);
     setCargando(false);
-    if (!r.ok) { vibrar([30, 40, 30]); setErr(ERRORES[r.error] || "No hemos podido entrar. Inténtalo de nuevo."); return; }
+    if (!r.ok) { vibrar([30, 40, 30]); setErr(ERRORES[r.error] || ERRORES.email); return; }
     vibrar(15);
-    router.replace(r.s.perfil?.nombre ? "/" : "/bienvenida");
+    router.replace(perfilCompleto(r.s) ? "/" : "/bienvenida");
   }
-
-  const fmt = (v) => v.replace(/\D/g, "").slice(0, 9).replace(/(\d{3})(\d{0,3})(\d{0,3})/, (m, a, b, c) => [a, b, c].filter(Boolean).join(" "));
 
   return (
     <div className="max-w-md mx-auto min-h-dvh bg-fondo">
@@ -56,33 +54,28 @@ function Entrar() {
       </div>
 
       <form onSubmit={entrar} className="card p-5 mx-5 -mt-10 relative z-10 space-y-4 entrada">
+        <div>
+          <div className="font-sora font-extrabold text-[18px]">Entra en tu acompañamiento</div>
+          <div className="text-[12.5px] text-sub font-medium mt-1 leading-snug">Abre el enlace que te enviamos o escribe el email de tu pedido.</div>
+        </div>
         <label className="block">
-          <span className="text-[12.5px] font-bold text-sub">Teléfono del pedido</span>
-          <div className="flex mt-1.5 gap-2">
-            <span className="flex items-center px-3.5 rounded-[16px] bg-crema text-[15px] font-bold text-sub">🇪🇸 +34</span>
-            <input inputMode="numeric" autoComplete="tel-national" placeholder="612 345 678"
-              value={fmt(tel)} onChange={(e) => setTel(e.target.value.replace(/\D/g, "").slice(0, 9))}
-              className="flex-1 min-w-0 px-4 py-3.5 text-[17px] font-semibold" />
-          </div>
+          <span className="text-[12.5px] font-bold text-sub">Email del pedido</span>
+          <input type="email" inputMode="email" autoComplete="email" autoCapitalize="none" placeholder="maria@gmail.com"
+            value={email} onChange={(e) => setEmail(e.target.value)}
+            className="w-full mt-1.5 px-4 py-4 text-[16px] font-semibold" />
         </label>
-        <label className="block">
-          <span className="text-[12.5px] font-bold text-sub">PIN de 4 números</span>
-          <input type="password" inputMode="numeric" maxLength={4} placeholder="••••"
-            value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 4))}
-            className="w-full mt-1.5 px-4 py-3.5 text-[22px] tracking-[12px] font-bold text-center" />
-          <span className="block text-[11.5px] text-sub2 font-medium mt-1.5">¿Primera vez? Elige ahora tu PIN y recuérdalo.</span>
-        </label>
-        {err && <div className="text-[13px] font-semibold text-rojo bg-[#FDECEE] rounded-2xl px-3 py-2.5">{err}</div>}
-        <button disabled={cargando || tel.length < 9 || pin.length < 4} className="btn-verde w-full py-4 text-[16px] disabled:opacity-40">
+        {err && <div className="text-[13px] font-semibold text-rojo bg-[#FDECEE] rounded-2xl px-3 py-2.5 leading-snug">{err}</div>}
+        <button disabled={cargando || email.length < 5} className="btn-verde w-full py-4 text-[16px] disabled:opacity-40">
           {cargando ? "Entrando…" : "Entrar"}
         </button>
+        <a href={linkCamila("", "No encuentro mi enlace de la app.")} target="_blank" rel="noreferrer" className="block text-center text-[12.5px] font-bold text-oro2">¿No tienes tu enlace? Pídelo a Camila →</a>
       </form>
 
       <div className="flex justify-center gap-5 mt-6 text-[11.5px] font-bold text-sub">
         <span>🔒 Datos protegidos</span><span>👩‍⚕️ Dr. Castellanos</span><span>👭 Grupo semanal</span>
       </div>
       <p className="text-[11px] text-sub2 font-medium text-center mt-4 pb-8 px-8 leading-relaxed">
-        Usa el mismo teléfono de tu pedido. Tus datos solo se usan para tu acompañamiento.
+        Tus datos solo se usan para tu acompañamiento.
       </p>
     </div>
   );

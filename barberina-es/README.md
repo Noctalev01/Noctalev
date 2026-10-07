@@ -5,18 +5,13 @@ Mesma ideia do app do Brasil (turma + ranking + prêmio), mas aqui a cliente **r
 o app é liberado na hora do pedido, **porém quase tudo fica bloqueado até o frasco chegar** (ela só paga ao receber).
 
 ## Fluxo
-1. **/entrar** — telefone +34 (9 dígitos) + PIN de 4 dígitos (1º acesso cria o PIN). Deep link `?tel=612345678`.
-2. **/bienvenida** — nome curto, cidade, peso atual, objetivo, avatar, aparecer no ranking.
-3. **ESPERANDO O FRASCO** (estado inicial)
-   - Hoy: rastreio do envio (confirmado → preparando → en camino → en reparto → recibido), checklist "Mientras esperas", guia da cápsula, consejo do Dr. para a espera, resumo do grupo, prévia bloqueada do registro, lista do que será desbloqueado, botão WhatsApp Camila.
-   - Grupo: **visível** (prova social) — prêmio 150 €, contador até domingo 23:59, ranking com quem já recebeu e a lista de quem está esperando (ela incluída). Não pontua.
-   - Recetas, plano semanal, Evolución, registro, progresso e compartilhar: **visíveis porém borrados** com cadeado.
-   - Aviso principal: "Estamos esperando que recibas tu pedido… liberamos automáticamente tu acceso completo".
-4. **Liberação automática pela equipe (sem código):** quando a encomenda é entregue, a equipe / outra IA grava no Supabase
-   `insert into app_entregas (tel, estado) values ('612345678','entregado') on conflict (tel) do update set estado='entregado';`
-   O app consulta `app_estado_entrega` ao abrir, ao voltar para o app e a cada 60 s → abre sozinho a tela de celebração **/recibido** → tudo liberado.
-   Estados intermediários opcionais aparecem no rastreio: `preparando` → `enviado` → `reparto` → `entregado`.
-5. **ATIVO**: dia da entrega = só "peso de partida"; a partir da manhã seguinte, registro diário de 20 s (sono, peso, cápsula + opcionais), streak, consejo semanal do Dr., progresso, ranking com pontos.
+1. A equipe cria a clienta no Supabase (`bm_crear_clienta`) → recebe o **link próprio** `/a/<token>` e manda por WhatsApp. Alternativa: a clienta entra em **/entrar** com o email do pedido.
+2. **/bienvenida** — "¡Hola, María!" (nome vem do banco) + peso atual, objetivo, avatar.
+3. **Esperando o pedido**: aviso "Estamos esperando que recibas tu pedido…", rastreio de 5 passos e tudo **borrado com cadeado** (registro, recetas, plan, evolución, compartir). Grupo/ranking visível.
+4. **Entrega**: a equipe roda `bm_marcar_envio(<email|tel|pedido|token>, 'entregado')` → o app libera sozinho (abre/volta ao app ou a cada 60 s) → **/recibido**.
+5. **Ativo**: registro diário de 20 s, progresso, consejo semanal do Dr., ranking com pontos e prêmio de 150 €.
+
+👉 Documento completo para operação: **`GUIA-PARA-OUTRA-IA.md`**.
 
 ## Grupo de la semana (perfis de roteiro) — `lib/grupo.js`
 - 20 mulheres espanholas (nome curto + cidade), **iguais para todas as usuárias**, ancoradas no dia em que a usuária entrou.
@@ -31,15 +26,13 @@ o app é liberado na hora do pedido, **porém quase tudo fica bloqueado até o f
 Abra **/prueba** (não aparece no menu): pula para o dia 1…7 do grupo, simula "frasco recibido hoy / ayer / hace 5 / 10 días".
 
 ## Supabase
-- Só a chave **ANON** (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`). Sem env → app roda 100% local.
-- RPCs do SQL-6: `app_login`, `app_registrar`, `app_perfil`, `app_mis_registros` (chamadas local-first; se falharem, o app segue funcionando).
-- **Rodar `supabase/SQL-7-ENTREGAS.sql`** depois do SQL-6: tabela `app_entregas` (RLS fechada para anon) + RPC `app_estado_entrega(p_tel, p_pin)`.
-  > No momento do desenvolvimento o SQL-6 ainda não estava aplicado no projeto `ctnyilyoyzutpqlnleqx` (tabelas `app_*` inexistentes).
+Rodar **`supabase/BARBERINA-ES-COMPLETO.sql`** (Supabase → SQL Editor → New query → colar → Run). É o único SQL necessário.
+O app usa só a chave **anon**; as tabelas têm RLS fechada e o acesso é só por funções que validam o token.
 
 ## Rodar / deploy
 ```bash
 npm install
-npm run dev     # http://localhost:3100
+npm run dev     # http://localhost:3100  (sem env do Supabase = modo demonstração)
 ```
 Vercel: importar o repositório com **Root Directory = `barberina-es`** e as env vars de `.env.example`. Domínio sugerido `app.noctalev.online`.
 

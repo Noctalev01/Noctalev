@@ -24,7 +24,18 @@ export function Logo({ claro = false, peq = false }) {
   );
 }
 
+// Splash com "rede de segurança": se em 6 s a tela não avançou (JS antigo em
+// cache, rede ruim…), mostra um botão para recarregar limpando o cache.
 export function Splash() {
+  const [lento, setLento] = useState(false);
+  useEffect(() => { const t = setTimeout(() => setLento(true), 6000); return () => clearTimeout(t); }, []);
+  async function reparar() {
+    try {
+      if ("serviceWorker" in navigator) for (const r of await navigator.serviceWorker.getRegistrations()) await r.unregister();
+      if (window.caches) for (const k of await caches.keys()) await caches.delete(k);
+    } catch {}
+    window.location.href = "/entrar";
+  }
   return (
     <div className="min-h-dvh flex flex-col items-center justify-center" style={{ background: "linear-gradient(160deg,#0E3B2B,#145238)" }}>
       <div className="w-28 h-28 rounded-[32px] vidrio flex items-center justify-center latido">
@@ -34,6 +45,11 @@ export function Splash() {
       <div className="flex gap-1.5 mt-4">
         {[0, 1, 2].map((i) => <div key={i} className="punto w-2 h-2 rounded-full bg-oro" style={{ animationDelay: `${i * 0.18}s` }} />)}
       </div>
+      {lento && (
+        <button onClick={reparar} className="mt-10 px-6 py-3 rounded-2xl vidrio text-white text-[14px] font-bold">
+          ¿Tarda mucho? Toca aquí
+        </button>
+      )}
     </div>
   );
 }

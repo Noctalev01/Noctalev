@@ -1,30 +1,36 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { load, frascoRecibido, comprobarEntrega } from "./store";
+import { load, frascoRecibido, comprobarEntrega, refrescarClienta, perfilCompleto } from "./store";
 
-// Carrega o estado local, redireciona se não há sessão e — enquanto o pedido
-// não foi entregue — consulta a liberação no Supabase ao abrir e a cada 60 s.
-// Quando a equipe marca "entregado", a cliente vai direto para /recibido.
+// Carrega o estado local (instantâneo, nunca espera a rede), redireciona se
+// não há sessão e — enquanto o pedido não foi entregue — consulta a liberação
+// no Supabase ao abrir, ao voltar ao app e a cada 60 s.
 export function useSesion({ exigePerfil = true } = {}) {
   const router = useRouter();
   const path = usePathname();
   const [s, setS] = useState(null);
   useEffect(() => {
-    const st = load();
-    if (!st.tel) { router.replace("/entrar" + (typeof window !== "undefined" ? window.location.search : "")); return; }
-    if (exigePerfil && !st.perfil?.nombre) { router.replace("/bienvenida"); return; }
+    let st;
+    try { st = load(); } catch { st = null; }
+    if (!st?.token) { router.replace("/entrar"); return; }
+    if (exigePerfil && !perfilCompleto(st)) { router.replace("/bienvenida"); return; }
     setS(st);
     if (frascoRecibido(st) && !st.vistos?.recibido && path !== "/recibido") { router.replace("/recibido"); return; }
-    if (frascoRecibido(st) || !exigePerfil) return;
     let vivo = true;
-    async function check() {
-      const r = await comprobarEntrega();
+    // dados frescos do banco (nome, estado) em segundo plano
+    refrescarClienta().then(({ s: n }) => {
       if (!vivo) return;
+      if (frascoRecibido(n) && !n.vistos?.recibido && path !== "/recibido") { router.replace("/recibido"); return; }
+      setS({ ...n });
+    }).catch(() => {});
+    if (frascoRecibido(st) || !exigePerfil) return () => { vivo = false; };
+    async function check() {
+      const r = await comprobarEntrega().catch(() => null);
+      if (!vivo || !r) return;
       if (r.recibido) { router.replace("/recibido"); return; }
       setS({ ...r.s });
     }
-    check();
     const t = setInterval(check, 60000);
     const vis = () => document.visibilityState === "visible" && check();
     document.addEventListener("visibilitychange", vis);

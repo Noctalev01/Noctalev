@@ -16,7 +16,7 @@ export default function Perfil() {
   const [ok, setOk] = useState(false);
   if (!s) return <Splash />;
   const p = f || {
-    nombre: s.perfil.nombre, ciudad: s.perfil.ciudad || "", objetivo: s.perfil.objetivo || "",
+    ciudad: s.perfil.ciudad || "", objetivo: s.perfil.objetivo || "",
     altura: s.perfil.altura || "", edad: s.perfil.edad || "", avatar: s.perfil.avatar, publico: s.perfil.publico !== false,
   };
   const set = (k, v) => { setF({ ...p, [k]: v }); setOk(false); };
@@ -24,7 +24,7 @@ export default function Perfil() {
 
   function guardar() {
     const n = (v) => { const x = parseFloat(String(v).replace(",", ".")); return isNaN(x) ? null : x; };
-    guardarPerfil({ ...p, nombre: p.nombre.trim().slice(0, 18) || s.perfil.nombre, objetivo: n(p.objetivo), altura: n(p.altura), edad: n(p.edad) });
+    guardarPerfil({ ...p, nombre: s.perfil.nombre, objetivo: n(p.objetivo), altura: n(p.altura), edad: n(p.edad) });
     vibrar(15); setOk(true); refrescar();
   }
 
@@ -36,7 +36,7 @@ export default function Perfil() {
           <div className="w-[72px] h-[72px] rounded-full vidrio flex items-center justify-center text-[38px]">{p.avatar}</div>
           <div>
             <h1 className="font-sora font-extrabold text-[24px] leading-tight text-white">{s.perfil.nombre}</h1>
-            <div className="text-[13px] text-white/75 font-semibold">{s.perfil.ciudad ? `${s.perfil.ciudad} · ` : ""}+34 {s.tel?.replace(/(\d{3})(\d{3})(\d{3})/, "$1 $2 $3")}</div>
+            <div className="text-[13px] text-white/75 font-semibold">{s.perfil.ciudad || "Grupo de la semana"}</div>
           </div>
         </div>
       </HeroFoto>
@@ -52,7 +52,7 @@ export default function Perfil() {
 
       <Card className="mt-4 p-5 space-y-3.5">
         <Eyebrow>Mis datos</Eyebrow>
-        {[["nombre", "Nombre", "text"], ["ciudad", "Ciudad", "text"], ["objetivo", "Quiero perder (kg)", "decimal"], ["altura", "Altura (cm)", "numeric"], ["edad", "Edad", "numeric"]].map(([k, l, im]) => (
+        {[["ciudad", "Ciudad", "text"], ["objetivo", "Quiero perder (kg)", "decimal"], ["altura", "Altura (cm)", "numeric"], ["edad", "Edad", "numeric"]].map(([k, l, im]) => (
           <label key={k} className="block">
             <span className="text-[12.5px] font-bold">{l}</span>
             <input inputMode={im} value={p[k] ?? ""} onChange={(e) => set(k, e.target.value)} className="w-full mt-1.5 px-4 py-3.5 text-[15px] font-semibold" />

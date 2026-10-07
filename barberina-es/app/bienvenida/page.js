@@ -1,5 +1,5 @@
 "use client";
-// Primeiro acesso: "¿Cómo quieres aparecer en el grupo?"
+// Primeiro acesso: o NOME já vem do banco (link/email). Só pedimos peso, objetivo e avatar.
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { guardarPerfil } from "../../lib/store";
@@ -11,7 +11,7 @@ const AVATARES = ["🌸", "🌷", "🌻", "🌹", "🌼", "🦋", "🌿", "🍀"
 export default function Bienvenida() {
   const router = useRouter();
   const [s] = useSesion({ exigePerfil: false });
-  const [f, setF] = useState({ nombre: "", ciudad: "", peso: "", objetivo: "", avatar: "🌸", publico: true });
+  const [f, setF] = useState({ peso: "", objetivo: "", avatar: "🌸", publico: true });
   const [err, setErr] = useState("");
 
   if (!s) return <Splash />;
@@ -21,12 +21,10 @@ export default function Bienvenida() {
   function guardar(e) {
     e.preventDefault();
     const peso = num(f.peso), obj = num(f.objetivo);
-    if (f.nombre.trim().length < 2) return setErr("Escribe tu nombre (ej. María J.).");
     if (!peso || peso < 40 || peso > 200) return setErr("Escribe tu peso actual en kg (ej. 78,5).");
     if (obj && (obj < 1 || obj > 50)) return setErr("Tu objetivo son los kilos que quieres perder (ej. 8).");
     vibrar(15);
     guardarPerfil({
-      nombre: f.nombre.trim().slice(0, 18), ciudad: f.ciudad.trim().slice(0, 24),
       pesoInicial: peso, objetivo: obj || 6, avatar: f.avatar, publico: f.publico,
     });
     router.replace("/");
@@ -38,23 +36,13 @@ export default function Bienvenida() {
         <img className="fondo" src="/img/grupo.jpg" alt="" />
         <div className="contenido px-6 pt-8 pb-12 flex flex-col justify-end" style={{ minHeight: 250 }}>
           <div className="eyebrow !text-oro">Bienvenida al grupo</div>
-          <h1 className="font-sora font-extrabold text-[26px] leading-tight text-white mt-1">¿Cómo quieres aparecer en el grupo?</h1>
-          <p className="text-[13.5px] text-white/80 font-medium mt-1.5 leading-relaxed">Solo tu nombre corto y tu ciudad. Nunca mostramos tu teléfono ni tu apellido.</p>
+          <h1 className="font-sora font-extrabold text-[28px] leading-tight text-white mt-1">¡Hola, {s.perfil?.nombre?.split(" ")[0] || ""}! 👋</h1>
+          <p className="text-[13.5px] text-white/80 font-medium mt-1.5 leading-relaxed">Solo dos datos para empezar a medir tu evolución. En el grupo aparecerás como <b className="text-white">{s.perfil?.nombre}</b>.</p>
         </div>
       </div>
 
       <form onSubmit={guardar} className="px-5 -mt-8 relative z-10 space-y-4 entrada">
         <div className="card p-5 space-y-4">
-          <label className="block">
-            <span className="text-[13px] font-bold">Nombre</span>
-            <input value={f.nombre} onChange={(e) => set("nombre", e.target.value)} placeholder="María J."
-              className="w-full mt-1.5 px-4 py-3 text-[16px] font-semibold" />
-          </label>
-          <label className="block">
-            <span className="text-[13px] font-bold">Ciudad</span>
-            <input value={f.ciudad} onChange={(e) => set("ciudad", e.target.value)} placeholder="Madrid"
-              className="w-full mt-1.5 px-4 py-3 text-[16px] font-semibold" />
-          </label>
           <div className="grid grid-cols-2 gap-3">
             <label className="block">
               <span className="text-[13px] font-bold">Peso actual</span>
