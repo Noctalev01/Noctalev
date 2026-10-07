@@ -16,12 +16,12 @@ export function useSesion({ exigePerfil = true } = {}) {
     if (!st?.token) { router.replace("/entrar"); return; }
     if (exigePerfil && !perfilCompleto(st)) { router.replace("/bienvenida"); return; }
     setS(st);
-    if (frascoRecibido(st) && !st.vistos?.recibido && path !== "/recibido") { router.replace("/recibido"); return; }
+    if (perfilCompleto(st) && frascoRecibido(st) && !st.vistos?.recibido && path !== "/recibido") { router.replace("/recibido"); return; }
     let vivo = true;
     // dados frescos do banco (nome, estado) em segundo plano
     refrescarClienta().then(({ s: n }) => {
       if (!vivo) return;
-      if (frascoRecibido(n) && !n.vistos?.recibido && path !== "/recibido") { router.replace("/recibido"); return; }
+      if (perfilCompleto(n) && frascoRecibido(n) && !n.vistos?.recibido && path !== "/recibido") { router.replace("/recibido"); return; }
       setS({ ...n });
     }).catch(() => {});
     if (frascoRecibido(st) || !exigePerfil) return () => { vivo = false; };
