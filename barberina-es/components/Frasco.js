@@ -1,98 +1,103 @@
 "use client";
-// Componentes da fase de ESPERA do frasco + ativação ao receber
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { Modal, vibrar } from "./ui";
-import { confirmarFrasco, diaGrupo } from "../lib/store";
-import { linkCamila, CONFIG } from "../lib/config";
+// Componentes da fase de ESPERA do pedido.
+// Não há código: a equipe marca a entrega no Supabase (app_entregas)
+// e o app libera sozinho (ver lib/useSesion.js).
+import { diaGrupo } from "../lib/store";
+import { CONFIG } from "../lib/config";
+import { Candado } from "./ui";
 
-// Estado aproximado do envio pelos dias desde o pedido (a cliente não vê datas exatas)
+// passo do rastreio: estado informado pela equipe ou estimado pelos dias
 export function pasoEnvio(s) {
+  const e = s.frasco?.envio;
+  if (e === "reparto") return 3;
+  if (e === "enviado") return 2;
+  if (e === "preparando") return 1;
   const d = diaGrupo(s);
-  if (d <= 1) return 1; // confirmado → preparando
-  if (d === 2) return 2; // en camino
-  return 3; // en reparto / llega en breve
+  return d <= 1 ? 1 : d === 2 ? 2 : 3;
 }
 
 const PASOS = [
-  { t: "Pedido confirmado", st: "Pagas al recibirlo" },
-  { t: "Preparando tu frasco", st: "En nuestro almacén" },
+  { t: "Pedido confirmado", st: "Pago al recibir" },
+  { t: "Preparando", st: "En nuestro almacén" },
   { t: "En camino", st: "Con la empresa de transporte" },
-  { t: "En reparto", st: "Muy pronto en tu casa" },
-  { t: "Recibido", st: "Se desbloquea todo" },
+  { t: "En reparto", st: "Hoy o mañana en tu casa" },
+  { t: "Entregado", st: "Se activa tu acompañamiento" },
 ];
 
-export function SeguimientoEnvio({ s }) {
+// Rastreio horizontal elegante
+export function Rastreo({ s, claro = false }) {
   const paso = pasoEnvio(s);
   return (
-    <div className="mt-4 space-y-0">
-      {PASOS.map((p, i) => {
-        const hecho = i < paso, actual = i === paso;
-        return (
-          <div key={i} className="flex gap-3">
-            <div className="flex flex-col items-center">
-              <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[12px] font-black flex-none
-                ${hecho ? "bg-verde text-white" : actual ? "bg-oro text-white latido" : "bg-[#F1EDE4] text-sub2"}`}>
-                {hecho ? "✓" : i + 1}
-              </div>
-              {i < PASOS.length - 1 && <div className={`w-[2px] h-6 ${hecho ? "bg-verde" : "bg-[#ECE8DF]"}`} />}
+    <div>
+      <div className="relative flex justify-between items-center px-1">
+        <div className={`absolute left-4 right-4 top-1/2 -translate-y-1/2 h-[3px] rounded-full ${claro ? "bg-white/20" : "bg-[#EFE9DD]"}`} />
+        <div className="absolute left-4 top-1/2 -translate-y-1/2 h-[3px] rounded-full bg-oro transition-all" style={{ width: `calc(${(paso / (PASOS.length - 1)) * 100}% - 32px * ${paso / (PASOS.length - 1)})` }} />
+        {PASOS.map((p, i) => {
+          const hecho = i < paso, actual = i === paso;
+          return (
+            <div key={i} className={`relative z-10 rounded-full flex items-center justify-center font-black text-[11px]
+              ${actual ? "w-8 h-8 bg-oro text-white pulso" : hecho ? "w-6 h-6 bg-oro text-white" : `w-6 h-6 ${claro ? "bg-white/15 text-white/60" : "bg-[#EFE9DD] text-sub2"}`}`}>
+              {hecho ? "✓" : i === PASOS.length - 1 ? "★" : i + 1}
             </div>
-            <div className="pb-2 -mt-[1px]">
-              <div className={`text-[13.5px] font-bold ${actual ? "text-oro2" : hecho ? "text-tinta" : "text-sub2"}`}>
-                {p.t} {actual && i === 2 && <span className="camion">🚚</span>}
-              </div>
-              <div className="text-[11.5px] text-sub2 font-medium">{p.st}</div>
-            </div>
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
+      <div className="mt-3 flex items-baseline justify-between">
+        <div>
+          <div className={`text-[15px] font-extrabold ${claro ? "text-white" : ""}`}>{PASOS[paso].t} {paso >= 2 && <span className="camion">🚚</span>}</div>
+          <div className={`text-[12px] font-medium ${claro ? "text-white/70" : "text-sub"}`}>{PASOS[paso].st}</div>
+        </div>
+        <div className={`text-[11px] font-bold ${claro ? "text-white/60" : "text-sub2"}`}>Paso {paso + 1} de {PASOS.length}</div>
+      </div>
     </div>
   );
 }
 
-export function ModalActivar({ abierto, onCerrar, nombre }) {
-  const router = useRouter();
-  const [codigo, setCodigo] = useState("");
-  const [err, setErr] = useState(false);
-  async function activar(e) {
-    e.preventDefault();
-    const r = await confirmarFrasco(codigo);
-    if (!r.ok) { setErr(true); vibrar([30, 40, 30]); return; }
-    vibrar([28, 60, 28, 60, 48]);
-    router.push("/recibido");
-  }
+// O aviso principal (tela HOY durante a espera)
+export function AvisoPedido({ s }) {
+  const nombre = s.perfil?.nombre?.split(" ")[0] || "";
   return (
-    <Modal abierto={abierto} onCerrar={onCerrar}>
-      <div className="text-center">
-        <img src="/img/frasco.png" alt="" className="w-24 h-24 object-contain mx-auto" />
-        <h2 className="font-sora font-extrabold text-[21px] mt-2">¿Ya tienes tu Barberina Max?</h2>
-        <p className="text-[13.5px] text-sub font-medium mt-1.5 leading-relaxed">
-          Escribe el <b className="text-tinta">código de activación</b> que viene en el folleto dentro de la caja.
+    <div className="card-tinta overflow-hidden relative">
+      <img src="/img/caja.jpg" alt="" className="absolute inset-0 w-full h-full object-cover opacity-25 mix-blend-luminosity" />
+      <div className="absolute inset-0" style={{ background: "linear-gradient(160deg,rgba(14,59,43,.75),rgba(14,59,43,.96))" }} />
+      <div className="relative p-6">
+        <div className="flex items-start gap-4">
+          <div className="flex-1">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full vidrio text-[10.5px] font-extrabold uppercase tracking-[1.2px] text-oro">
+              <span className="w-1.5 h-1.5 rounded-full bg-oro punto" /> Pedido en camino
+            </div>
+            <h2 className="font-sora font-extrabold text-[22px] leading-[1.15] mt-3 text-white">
+              Estamos esperando que recibas tu pedido{nombre ? `, ${nombre}` : ""}
+            </h2>
+          </div>
+          <img src="/img/frasco.png" alt="Barberina Max" className="w-[84px] h-[104px] object-contain flotar flex-none drop-shadow-2xl" />
+        </div>
+        <p className="text-[13.5px] text-white/80 font-medium leading-relaxed mt-3">
+          En cuanto tu Barberina Max sea entregado, <b className="text-white">liberamos automáticamente tu acceso completo</b> y empieza tu acompañamiento con el Dr. Castellanos y tu grupo.
         </p>
+        <div className="mt-5 rounded-[20px] vidrio p-4"><Rastreo s={s} claro /></div>
+        <div className="mt-4 grid grid-cols-3 gap-2 text-center">
+          {[["📦", CONFIG.entregaDias.replace(" laborables", "")], ["💶", "Pagas al recibir"], ["🔓", "Acceso automático"]].map(([i, t]) => (
+            <div key={t} className="rounded-2xl bg-white/[.07] py-2.5 px-1">
+              <div className="text-[18px]">{i}</div>
+              <div className="text-[10.5px] font-bold text-white/80 mt-0.5 leading-tight">{t}</div>
+            </div>
+          ))}
+        </div>
       </div>
-      <form onSubmit={activar} className="mt-5">
-        <input autoFocus value={codigo} onChange={(e) => { setCodigo(e.target.value.toUpperCase()); setErr(false); }}
-          placeholder="CÓDIGO" autoCapitalize="characters"
-          className="w-full px-4 py-4 text-[22px] tracking-[6px] font-black text-center uppercase" />
-        {err && <div className="text-[13px] font-semibold text-rojo mt-2 text-center">Ese código no es correcto. Míralo en el folleto de la caja.</div>}
-        <button disabled={codigo.trim().length < 3} className="btn-verde w-full py-4 text-[16px] mt-4">Desbloquear mi app</button>
-      </form>
-      <a href={linkCamila(nombre, "Ya he recibido mi frasco pero no encuentro el código.")} target="_blank" rel="noreferrer"
-        className="block text-center text-[13px] font-bold text-sub mt-4 underline">No encuentro el código → Camila</a>
-    </Modal>
+    </div>
   );
 }
 
-// Faixa curta mostrada no topo das abas bloqueadas
-export function AvisoEspera({ onActivar }) {
+// Faixa curta no topo das abas bloqueadas
+export function FranjaEspera() {
   return (
-    <div className="card p-4 flex items-center gap-3 brillo" style={{ borderColor: "#FDE68A" }}>
-      <div className="text-[26px] flex-none camion">📦</div>
+    <div className="card-tinta p-4 flex items-center gap-3">
+      <div className="w-11 h-11 rounded-2xl vidrio flex items-center justify-center flex-none"><Candado size={18} color="#F5D27A" /></div>
       <div className="flex-1">
-        <div className="text-[13.5px] font-extrabold">Tu frasco está en camino</div>
-        <div className="text-[12px] text-sub font-medium leading-snug">Al recibirlo se desbloquea esta sección. Entrega en {CONFIG.entregaDias}.</div>
+        <div className="text-[13.5px] font-extrabold text-white">Se abre al recibir tu pedido</div>
+        <div className="text-[11.5px] text-white/70 font-medium leading-snug">Lo activamos automáticamente cuando el repartidor lo entregue.</div>
       </div>
-      <button onClick={onActivar} className="btn-verde px-3 py-2 text-[12px] flex-none">Ya lo tengo</button>
     </div>
   );
 }

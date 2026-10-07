@@ -2,8 +2,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSesion } from "../../lib/useSesion";
-import { PageShell, Logo, Splash, Card, Eyebrow, vibrar } from "../../components/ui";
-import { ModalActivar } from "../../components/Frasco";
+import { PageShell, Logo, Splash, Card, Eyebrow, vibrar, HeroFoto } from "../../components/ui";
 import { guardarPerfil, logout, frascoRecibido } from "../../lib/store";
 import { CONFIG, linkCamila, BLOQ_ESPERA } from "../../lib/config";
 import { fechaLarga } from "../../lib/fechas";
@@ -15,7 +14,6 @@ export default function Perfil() {
   const [s, refrescar] = useSesion();
   const [f, setF] = useState(null);
   const [ok, setOk] = useState(false);
-  const [activar, setActivar] = useState(false);
   if (!s) return <Splash />;
   const p = f || {
     nombre: s.perfil.nombre, ciudad: s.perfil.ciudad || "", objetivo: s.perfil.objetivo || "",
@@ -31,31 +29,33 @@ export default function Perfil() {
   }
 
   return (
-    <PageShell bloqueadas={recibido ? [] : BLOQ_ESPERA}>
-      <Logo peq />
-      <div className="flex items-center gap-4 mt-5">
-        <div className="w-16 h-16 rounded-full bg-white border border-linea flex items-center justify-center text-[34px]">{p.avatar}</div>
-        <div>
-          <h1 className="font-sora font-extrabold text-[22px] leading-tight">{s.perfil.nombre}</h1>
-          <div className="text-[13px] text-sub font-semibold">+34 {s.tel?.replace(/(\d{3})(\d{3})(\d{3})/, "$1 $2 $3")}</div>
+    <PageShell bloqueadas={recibido ? [] : BLOQ_ESPERA} sinPadding>
+      <HeroFoto src="/img/playa.jpg" alto={230} posicion="center 70%">
+        <Logo claro peq />
+        <div className="flex items-center gap-4">
+          <div className="w-[72px] h-[72px] rounded-full vidrio flex items-center justify-center text-[38px]">{p.avatar}</div>
+          <div>
+            <h1 className="font-sora font-extrabold text-[24px] leading-tight text-white">{s.perfil.nombre}</h1>
+            <div className="text-[13px] text-white/75 font-semibold">{s.perfil.ciudad ? `${s.perfil.ciudad} · ` : ""}+34 {s.tel?.replace(/(\d{3})(\d{3})(\d{3})/, "$1 $2 $3")}</div>
+          </div>
+        </div>
+      </HeroFoto>
+      <div className="px-5">
+
+      <div className="card-tinta mt-4 p-4 flex items-center gap-3">
+        <img src="/img/frasco.png" alt="" className="w-12 h-14 object-contain" />
+        <div className="flex-1">
+          <div className="text-[14px] font-extrabold">{recibido ? "Pedido entregado ✓" : "Pedido en camino"}</div>
+          <div className="text-[12px] text-white/70 font-medium">{recibido ? `Acompañamiento activo desde el ${fechaLarga(s.frasco.recibidoEn)}` : "Activamos tu acceso completo automáticamente al entregarlo"}</div>
         </div>
       </div>
-
-      <Card className="mt-5 p-4 flex items-center gap-3">
-        <img src="/img/frasco.png" alt="" className="w-12 h-12 object-contain" />
-        <div className="flex-1">
-          <div className="text-[13.5px] font-extrabold">{recibido ? "Frasco recibido ✓" : "Frasco en camino"}</div>
-          <div className="text-[12px] text-sub font-medium">{recibido ? `Desde el ${fechaLarga(s.frasco.recibidoEn)}` : "Toda la app se desbloquea al recibirlo"}</div>
-        </div>
-        {!recibido && <button onClick={() => setActivar(true)} className="btn-verde px-3 py-2 text-[12px]">Ya lo tengo</button>}
-      </Card>
 
       <Card className="mt-4 p-5 space-y-3.5">
         <Eyebrow>Mis datos</Eyebrow>
         {[["nombre", "Nombre", "text"], ["ciudad", "Ciudad", "text"], ["objetivo", "Quiero perder (kg)", "decimal"], ["altura", "Altura (cm)", "numeric"], ["edad", "Edad", "numeric"]].map(([k, l, im]) => (
           <label key={k} className="block">
             <span className="text-[12.5px] font-bold">{l}</span>
-            <input inputMode={im} value={p[k] ?? ""} onChange={(e) => set(k, e.target.value)} className="w-full mt-1 px-4 py-3 text-[15px] font-semibold" />
+            <input inputMode={im} value={p[k] ?? ""} onChange={(e) => set(k, e.target.value)} className="w-full mt-1.5 px-4 py-3.5 text-[15px] font-semibold" />
           </label>
         ))}
         <div>
@@ -83,7 +83,7 @@ export default function Perfil() {
       <p className="text-[10.5px] text-sub2 font-medium text-center mt-3 leading-relaxed opacity-80">
         Barberina Max es un complemento alimenticio. No sustituye una dieta variada y equilibrada ni un estilo de vida saludable. Los resultados pueden variar de una persona a otra.
       </p>
-      <ModalActivar abierto={activar} onCerrar={() => setActivar(false)} nombre={s.perfil.nombre} />
+      </div>
     </PageShell>
   );
 }

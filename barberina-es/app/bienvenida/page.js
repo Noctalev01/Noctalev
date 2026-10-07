@@ -33,14 +33,17 @@ export default function Bienvenida() {
   }
 
   return (
-    <div className="max-w-md mx-auto min-h-dvh bg-fondo px-6 pt-8 pb-10 entrada">
-      <div className="eyebrow">Paso 1 de 1</div>
-      <h1 className="font-sora font-extrabold text-[25px] leading-tight mt-1">¿Cómo quieres aparecer en el grupo?</h1>
-      <p className="text-[14px] text-sub font-medium mt-2 leading-relaxed">
-        Solo tu nombre corto y tu ciudad. Nunca mostramos tu teléfono ni tu apellido.
-      </p>
+    <div className="max-w-md mx-auto min-h-dvh bg-fondo pb-10">
+      <div className="hero" style={{ minHeight: 250 }}>
+        <img className="fondo" src="/img/grupo.jpg" alt="" />
+        <div className="contenido px-6 pt-8 pb-12 flex flex-col justify-end" style={{ minHeight: 250 }}>
+          <div className="eyebrow !text-oro">Bienvenida al grupo</div>
+          <h1 className="font-sora font-extrabold text-[26px] leading-tight text-white mt-1">¿Cómo quieres aparecer en el grupo?</h1>
+          <p className="text-[13.5px] text-white/80 font-medium mt-1.5 leading-relaxed">Solo tu nombre corto y tu ciudad. Nunca mostramos tu teléfono ni tu apellido.</p>
+        </div>
+      </div>
 
-      <form onSubmit={guardar} className="mt-6 space-y-4">
+      <form onSubmit={guardar} className="px-5 -mt-8 relative z-10 space-y-4 entrada">
         <div className="card p-5 space-y-4">
           <label className="block">
             <span className="text-[13px] font-bold">Nombre</span>
@@ -86,14 +89,14 @@ export default function Bienvenida() {
               <div className="text-[12px] text-sub font-medium">Puedes cambiarlo cuando quieras</div>
             </div>
             <button type="button" onClick={() => set("publico", !f.publico)}
-              className={`w-12 h-7 rounded-full relative transition-colors ${f.publico ? "bg-verde" : "bg-[#D9D4C8]"}`}>
+              className={`w-12 h-7 rounded-full relative transition-colors ${f.publico ? "bg-bosque2" : "bg-[#D9D4C8]"}`}>
               <span className={`absolute top-1 w-5 h-5 rounded-full bg-white transition-all ${f.publico ? "left-6" : "left-1"}`} />
             </button>
           </label>
         </div>
 
         {err && <div className="text-[13px] font-semibold text-rojo bg-[#FDECEE] rounded-xl px-3 py-2.5">{err}</div>}
-        <button className="btn-oro w-full py-4 text-[16px]">Entrar en mi grupo</button>
+        <button className="btn-verde w-full py-4 text-[16px]">Entrar en mi grupo</button>
       </form>
     </div>
   );

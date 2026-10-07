@@ -4,8 +4,8 @@
   "description": "Tu acompañamiento diario con Barberina Max y el Dr. Castellanos",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#FBFAF7",
-  "theme_color": "#FBFAF7",
+  "background_color": "#F6F2EA",
+  "theme_color": "#0E3B2B",
   "orientation": "portrait",
   "lang": "es-ES",
   "icons": [

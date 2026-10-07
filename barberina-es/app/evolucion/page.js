@@ -1,9 +1,8 @@
 "use client";
 // MI EVOLUCIÓN — gráfico de peso, barras de sono, calendário de constância, histórico
-import { useState } from "react";
 import { useSesion } from "../../lib/useSesion";
-import { PageShell, Logo, Splash, Card, Eyebrow, Bloqueo } from "../../components/ui";
-import { ModalActivar, AvisoEspera } from "../../components/Frasco";
+import { PageShell, Logo, Splash, Card, Eyebrow, Bloqueo, HeroFoto } from "../../components/ui";
+import { FranjaEspera } from "../../components/Frasco";
 import { caritaDe } from "../../components/Registro";
 import { frascoRecibido, registrosOrdenados, pesoPerdido, suenoMedio, diasRegistrados, racha } from "../../lib/store";
 import { hoyMadrid, sumarDias, fechaDM, kg, fechaCorta } from "../../lib/fechas";
@@ -64,7 +63,6 @@ function Calendario({ s }) {
 
 export default function Evolucion() {
   const [s] = useSesion();
-  const [activar, setActivar] = useState(false);
   if (!s) return <Splash />;
   const recibido = frascoRecibido(s);
   const regs = registrosOrdenados(s);
@@ -74,13 +72,13 @@ export default function Evolucion() {
     <>
       <div className="grid grid-cols-3 gap-2.5 mt-4">
         {[[`${pesoPerdido(s) > 0 ? "−" : ""}${kg(pesoPerdido(s))}`, "kg perdidos"], [suenoMedio(s) ? kg(suenoMedio(s)) : "—", "sueño medio"], [String(racha(s)), "días seguidos"]].map(([v, l]) => (
-          <Card key={l} className="p-3 text-center">
+          <Card key={l} className="p-3.5 text-center">
             <div className="font-sora font-extrabold text-[21px] text-verde">{v}</div>
             <div className="text-[10.5px] font-bold text-sub2 mt-0.5">{l}</div>
           </Card>
         ))}
       </div>
-      <Card className="mt-4 p-5"><Eyebrow>Peso</Eyebrow><GraficoPeso pts={recibido ? pesos.slice(-30) : [{ fecha: hoyMadrid(), peso: 80 }, { fecha: hoyMadrid(), peso: 79 }, { fecha: hoyMadrid(), peso: 78.4 }, { fecha: hoyMadrid(), peso: 77.6 }]} /></Card>
+      <Card className="mt-4 p-5"><Eyebrow>Peso</Eyebrow><GraficoPeso pts={recibido ? pesos.slice(-30) : [80, 79, 78.6, 78.1, 77.6, 77.4].map((p, i) => ({ fecha: sumarDias(hoyMadrid(), i - 5), peso: p }))} /></Card>
       <Card className="mt-4 p-5"><Eyebrow>Sueño · 14 días</Eyebrow><BarrasSueno s={s} /></Card>
       <Card className="mt-4 p-5">
         <div className="flex justify-between"><Eyebrow>Constancia · 5 semanas</Eyebrow><span className="text-[11px] font-bold text-sub2">{diasRegistrados(s)} días</span></div>
@@ -109,21 +107,25 @@ export default function Evolucion() {
   );
 
   return (
-    <PageShell bloqueadas={recibido ? [] : BLOQ_ESPERA}>
-      <Logo peq />
-      <h1 className="font-sora font-extrabold text-[24px] mt-5">Mi evolución</h1>
-      {recibido ? contenido : (
-        <>
-          <div className="mt-4"><AvisoEspera onActivar={() => setActivar(true)} /></div>
-          <div className="mt-2">
-            <Bloqueo onClick={() => setActivar(true)} titulo="Tus gráficas de peso y sueño" texto="Empiezan con tu primera mañana con Barberina Max">
-              {contenido}
-            </Bloqueo>
-          </div>
-        </>
-      )}
-      <a href={linkCamila(s.perfil.nombre)} target="_blank" rel="noreferrer" className="btn-wa block text-center w-full py-3.5 text-[14.5px] mt-5">💬 Hablar con Camila</a>
-      <ModalActivar abierto={activar} onCerrar={() => setActivar(false)} nombre={s.perfil.nombre} />
+    <PageShell bloqueadas={recibido ? [] : BLOQ_ESPERA} sinPadding>
+      <HeroFoto src="/img/bascula.jpg" alto={210}>
+        <Logo claro peq />
+        <div>
+          <div className="eyebrow !text-oro">Tu camino</div>
+          <h1 className="font-sora font-extrabold text-[28px] text-white leading-tight mt-1">Mi evolución</h1>
+        </div>
+      </HeroFoto>
+      <div className="px-5">
+        {recibido ? contenido : (
+          <>
+            <div className="mt-4"><FranjaEspera /></div>
+            <div className="mt-1">
+              <Bloqueo titulo="Tus gráficas de peso y sueño" texto="Empiezan con tu primera mañana con Barberina Max">{contenido}</Bloqueo>
+            </div>
+          </>
+        )}
+        <a href={linkCamila(s.perfil.nombre)} target="_blank" rel="noreferrer" className="btn-wa block text-center w-full py-4 text-[15px] mt-5">💬 Hablar con Camila</a>
+      </div>
     </PageShell>
   );
 }

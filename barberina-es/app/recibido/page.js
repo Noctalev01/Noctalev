@@ -1,17 +1,17 @@
 "use client";
-// Celebração do desbloqueio (frasco recibido)
+// Celebração: a equipe marcou a entrega no Supabase → acesso liberado
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSesion } from "../../lib/useSesion";
 import { Splash, Confeti, vibrar } from "../../components/ui";
 import { frascoRecibido, marcarVisto } from "../../lib/store";
+import { CONFIG } from "../../lib/config";
 
 const LIBERADO = [
-  ["⚖️", "Registro diario", "Peso y sueño en 20 segundos"],
-  ["🏆", "Ranking y premio de 150 €", "Ya sumas puntos desde mañana"],
-  ["🥗", "Todas las recetas fit", "Y el plan semanal de comidas"],
-  ["📈", "Mi evolución", "Gráficas de peso y sueño"],
-  ["👨‍⚕️", "Consejos semanales del Dr.", "Uno nuevo cada lunes"],
+  ["/img/bascula.jpg", "Registro diario", "Peso y sueño en 20 s"],
+  ["/img/trofeo.jpg", `Premio de ${CONFIG.premioEur} €`, "Ya compites en el grupo"],
+  ["/img/r-garbanzos.jpg", "Recetas fit", "Y tu plan semanal"],
+  ["/img/playa.jpg", "Mi evolución", "Gráficas día a día"],
 ];
 
 export default function Recibido() {
@@ -24,30 +24,42 @@ export default function Recibido() {
   if (!s) return <Splash />;
 
   return (
-    <div className="max-w-md mx-auto min-h-dvh bg-fondo flex flex-col">
+    <div className="max-w-md mx-auto min-h-dvh relative overflow-hidden" style={{ background: "linear-gradient(170deg,#0E3B2B 0%,#145238 55%,#F6F2EA 55.1%)" }}>
       <Confeti activo />
-      <div className="franja h-3" /><div className="oro-linea" />
-      <div className="px-6 pt-8 pb-10 entrada flex-1 flex flex-col">
-        <img src="/img/frasco.png" alt="" className="w-40 h-40 object-contain mx-auto drop-shadow-xl latido" />
-        <h1 className="font-sora font-extrabold text-[27px] text-center leading-tight mt-3">¡Ya tienes tu Barberina Max, {s.perfil.nombre.split(" ")[0]}!</h1>
-        <p className="text-[14.5px] text-sub font-medium text-center mt-2 leading-relaxed">Tu app está desbloqueada. Desde hoy compites en el grupo de la semana.</p>
+      <div className="px-6 pt-10 pb-10 entrada">
+        <div className="text-center">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full vidrio text-[11px] font-extrabold uppercase tracking-[1.3px] text-oro">✓ Pedido entregado</div>
+          <div className="relative mx-auto mt-5 w-48 h-48">
+            <div className="absolute inset-0 rounded-full" style={{ background: "radial-gradient(circle,rgba(245,210,122,.55),rgba(245,210,122,0) 70%)" }} />
+            <img src="/img/frasco.png" alt="" className="relative w-full h-full object-contain drop-shadow-2xl flotar" />
+          </div>
+          <h1 className="font-sora font-extrabold text-[28px] leading-tight text-white mt-2">¡Tu acompañamiento empieza hoy, {s.perfil.nombre.split(" ")[0]}!</h1>
+          <p className="text-[14px] text-white/80 font-medium mt-2 leading-relaxed">Hemos activado tu acceso completo. Ya formas parte del ranking del grupo.</p>
+        </div>
 
-        <div className="card p-5 mt-6 space-y-3">
-          {LIBERADO.map(([i, t, d]) => (
-            <div key={t} className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-[#F2FBF5] flex items-center justify-center text-[19px]">{i}</div>
-              <div className="flex-1"><div className="text-[13.5px] font-bold">{t}</div><div className="text-[11.5px] text-sub2 font-medium">{d}</div></div>
-              <span className="text-verde font-black">✓</span>
+        <div className="grid grid-cols-2 gap-3 mt-8">
+          {LIBERADO.map(([img, t, d]) => (
+            <div key={t} className="relative h-[130px] rounded-[22px] overflow-hidden" style={{ boxShadow: "0 14px 28px -16px rgba(19,35,27,.6)" }}>
+              <img src={img} alt="" className="absolute inset-0 w-full h-full object-cover" />
+              <div className="absolute inset-0" style={{ background: "linear-gradient(180deg,rgba(14,59,43,.1),rgba(14,59,43,.9))" }} />
+              <div className="absolute top-2.5 right-2.5 w-7 h-7 rounded-full bg-verde2 text-white text-[13px] font-black flex items-center justify-center">✓</div>
+              <div className="absolute bottom-0 p-3 text-white">
+                <div className="font-sora font-bold text-[14px] leading-tight">{t}</div>
+                <div className="text-[11px] text-white/80 font-medium">{d}</div>
+              </div>
             </div>
           ))}
         </div>
 
-        <div className="card p-4 mt-4" style={{ background: "#FFF7E6", borderColor: "#FDE68A" }}>
-          <div className="text-[13.5px] font-extrabold">🌙 Esta noche: tu primera cápsula</div>
-          <div className="text-[12.5px] text-sub font-medium mt-1 leading-snug">Después de cenar, con un vaso de agua. Mañana, nada más levantarte, sube a la báscula y apúntalo aquí.</div>
+        <div className="card-oro p-4 mt-4 flex gap-3 items-center">
+          <div className="w-11 h-11 rounded-2xl bg-white/70 flex items-center justify-center text-[22px] flex-none">🌙</div>
+          <div>
+            <div className="text-[13.5px] font-extrabold">Esta noche: tu primera cápsula</div>
+            <div className="text-[12.5px] text-sub font-medium mt-0.5 leading-snug">Después de cenar, con agua. Mañana, nada más levantarte, pésate y apúntalo aquí.</div>
+          </div>
         </div>
 
-        <button onClick={() => { marcarVisto("recibido"); router.replace("/"); }} className="btn-oro w-full py-4 text-[16px] mt-6">Empezar</button>
+        <button onClick={() => { marcarVisto("recibido"); router.replace("/"); }} className="btn-verde w-full py-4 text-[16px] mt-6">Empezar mi acompañamiento</button>
       </div>
     </div>
   );

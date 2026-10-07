@@ -18,6 +18,7 @@ export default function Prueba() {
       s.perfil = { nombre: "María J.", ciudad: "Madrid", pesoInicial: 82, objetivo: 8, avatar: "🌸", publico: true, ...s.perfil, creadoEn: ini };
       s.registros = { [ini]: { peso: s.perfil.pesoInicial } };
       s.frasco = { estado: "esperando", recibidoEn: null };
+      s.vistos = {};
     }, `Ahora estás en el día ${d} del grupo (esperando frasco).`);
   }
   function recibir(haceDias) {
@@ -26,6 +27,7 @@ export default function Prueba() {
       const hoy = hoyMadrid();
       const rec = sumarDias(hoy, -haceDias);
       s.frasco = { estado: "recibido", recibidoEn: rec };
+      s.vistos = { ...s.vistos, recibido: haceDias > 0 };
       const ini = s.perfil.pesoInicial;
       const curva = [0, 1.0, 1.4, 1.8, 2.1, 2.5, 2.8, 3.0, 3.3, 3.5, 3.8];
       for (let k = 1; k < haceDias; k++) { // hoje fica para a usuária registrar
@@ -42,11 +44,15 @@ export default function Prueba() {
       <p className="text-[13px] text-sub">Simula la historia del grupo. Todo es local (este móvil).</p>
       <div className="eyebrow pt-2">Esperando el frasco</div>
       {[1, 2, 3, 4, 5, 7].map((d) => <B key={d} onClick={() => diaGrupo(d)}>Día {d} del grupo</B>)}
-      <div className="eyebrow pt-2">Frasco recibido</div>
-      <B onClick={() => recibir(0)}>Recibido hoy</B>
-      <B onClick={() => recibir(1)}>Recibido ayer (hoy toca el 1er registro)</B>
-      <B onClick={() => recibir(5)}>Recibido hace 5 días</B>
-      <B onClick={() => recibir(10)}>Recibido hace 10 días</B>
+      <div className="eyebrow pt-2">Estado del envío (lo que la equipe marca en app_entregas)</div>
+      {[["preparando", "Preparando"], ["enviado", "Enviado / en camino"], ["reparto", "En reparto"]].map(([k, t]) => (
+        <B key={k} onClick={() => aplicar((s) => { s.frasco = { estado: "esperando", recibidoEn: null, envio: k }; }, `Envío: ${t}`)}>{t}</B>
+      ))}
+      <div className="eyebrow pt-2">Entregado (simula la liberación automática)</div>
+      <B onClick={() => recibir(0)}>Entregado hoy (abre la celebración)</B>
+      <B onClick={() => recibir(1)}>Entregado ayer (hoy toca el 1er registro)</B>
+      <B onClick={() => recibir(5)}>Entregado hace 5 días</B>
+      <B onClick={() => recibir(10)}>Entregado hace 10 días</B>
       <div className="eyebrow pt-2">Otros</div>
       <B onClick={() => { logout(); setMsg("Borrado."); }}>Borrar todo</B>
       {msg && <div className="text-[13px] font-bold text-verde">{msg}</div>}

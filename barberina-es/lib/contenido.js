@@ -28,20 +28,20 @@ export const CONSEJOS_DR = [
 ];
 
 export const CONSEJO_ESPERA = {
-  titulo: "Mientras llega tu frasco",
+  titulo: "Mientras llega tu pedido",
   texto:
     "Aprovecha estos días para preparar a tu cuerpo: cena un poco antes, bebe agua y acuéstate a la misma hora. Cuando llegue Barberina Max, empezarás con ventaja. Y recuerda: pagas al recibirlo, así que ten el importe preparado para el repartidor.",
 };
 
 export const RECETAS = [
   {
-    id: "tostada-aguacate", libre: true, tipo: "Desayuno", nombre: "Tostada de centeno con aguacate y huevo",
+    id: "tostada-aguacate", tipo: "Desayuno", nombre: "Tostada de centeno con aguacate y huevo",
     kcal: 310, min: 8, emoji: "🥑",
     ingredientes: ["1 rebanada de pan de centeno", "½ aguacate", "1 huevo", "Tomate rallado", "Pimienta y una pizca de sal"],
     pasos: ["Tuesta el pan y úntale el tomate.", "Machaca el aguacate y ponlo encima.", "Haz el huevo a la plancha o escalfado y corónalo."],
   },
   {
-    id: "gazpacho", libre: true, tipo: "Comida", nombre: "Gazpacho andaluz ligero",
+    id: "gazpacho", tipo: "Comida", nombre: "Gazpacho andaluz ligero",
     kcal: 140, min: 10, emoji: "🍅",
     ingredientes: ["4 tomates maduros", "½ pepino", "½ pimiento verde", "1 diente de ajo", "1 cda. de aceite de oliva virgen extra", "Vinagre de Jerez"],
     pasos: ["Trocea todo y tritúralo con un vaso de agua fría.", "Añade el aceite y el vinagre y vuelve a triturar.", "Enfría en la nevera al menos 1 hora."],
@@ -59,7 +59,7 @@ export const RECETAS = [
     pasos: ["Pocha la cebolla y el calabacín en la sartén.", "Bate los huevos y mézclalos con la verdura.", "Cuaja a fuego lento por ambos lados."],
   },
   {
-    id: "ensalada-garbanzos", tipo: "Comida", nombre: "Ensalada templada de garbanzos y espinacas",
+    id: "ensalada-garbanzos", img: "/img/r-garbanzos.jpg", tipo: "Comida", nombre: "Ensalada templada de garbanzos y espinacas",
     kcal: 380, min: 12, emoji: "🥗",
     ingredientes: ["150 g de garbanzos cocidos", "Un puñado de espinacas", "1 huevo duro", "Pimentón de la Vera", "Aceite y limón"],
     pasos: ["Saltea los garbanzos con pimentón 3 minutos.", "Añade las espinacas hasta que se ablanden.", "Sirve con el huevo y aliña con limón."],
@@ -88,6 +88,36 @@ export const RECETAS = [
     ingredientes: ["1 cdta. de melisa", "1 cdta. de manzanilla", "1 rama de canela", "Unas gotas de limón"],
     pasos: ["Hierve 250 ml de agua con la canela.", "Apaga y añade melisa y manzanilla 5 minutos.", "Tómala 30 minutos antes de dormir, junto a tu cápsula."],
   },
+  {
+    id: "ensalada-griega", img: "/img/r-griega.jpg", tipo: "Comida", nombre: "Ensalada mediterránea con aceitunas",
+    kcal: 260, min: 10, emoji: "🫒",
+    ingredientes: ["2 tomates", "½ pepino", "¼ de cebolla morada", "40 g de queso fresco", "8 aceitunas negras", "Orégano y aceite de oliva"],
+    pasos: ["Trocea el tomate, el pepino y la cebolla.", "Añade el queso en dados y las aceitunas.", "Aliña con aceite, orégano y una pizca de sal."],
+  },
+  {
+    id: "ensalada-aguacate", img: "/img/r-aguacate.jpg", tipo: "Cena", nombre: "Bol de rúcula, aguacate y tomate cherry",
+    kcal: 320, min: 8, emoji: "🥑",
+    ingredientes: ["Un puñado de rúcula", "½ aguacate", "8 tomates cherry", "Aceitunas", "1 rebanada de pan integral tostado"],
+    pasos: ["Pon la rúcula de base en un bol.", "Añade el aguacate en láminas y los cherry partidos.", "Aliña con limón y acompaña con el pan tostado."],
+  },
+  {
+    id: "ensalada-pasta", img: "/img/r-pasta.jpg", tipo: "Comida", nombre: "Ensalada de pasta integral con rúcula",
+    kcal: 410, min: 15, emoji: "🍝",
+    ingredientes: ["60 g de pasta integral", "Rúcula", "Aceitunas", "Lascas de queso curado", "Tomate seco", "Aceite de oliva"],
+    pasos: ["Cuece la pasta y enfríala con agua.", "Mezcla con la rúcula, las aceitunas y el tomate seco.", "Termina con unas lascas de queso y un hilo de aceite."],
+  },
+  {
+    id: "ensalada-fresca", img: "/img/r-feta.jpg", tipo: "Cena", nombre: "Ensalada verde con queso fresco",
+    kcal: 220, min: 6, emoji: "🧀",
+    ingredientes: ["Mezcla de lechugas", "60 g de queso fresco", "Aceitunas verdes", "Nueces", "Vinagre de Módena"],
+    pasos: ["Lava y seca bien las hojas.", "Añade el queso en dados, las aceitunas y las nueces.", "Aliña justo antes de servir."],
+  },
+  {
+    id: "ensalada-verde", img: "/img/r-verde.jpg", tipo: "Comida", nombre: "Ensalada verde con tomate y cebolleta",
+    kcal: 150, min: 5, emoji: "🥬",
+    ingredientes: ["Lechuga romana", "1 tomate", "Cebolleta", "Pepino", "Aceite de oliva y vinagre"],
+    pasos: ["Corta todo en trozos pequeños.", "Mezcla en un bol grande.", "Aliña con aceite, vinagre y sal."],
+  },
 ];
 
 export const PLAN_SEMANAL = [
@@ -110,9 +140,8 @@ export const GUIA_CAPSULA = [
 
 // funcionalidades bloqueadas enquanto o frasco não chega (para a tela de "espera")
 export const BLOQUEADAS = [
-  { icono: "⚖️", titulo: "Registro diario de peso y sueño", texto: "20 segundos cada mañana" },
-  { icono: "🏆", titulo: "Ranking y premio semanal", texto: "Compite con tu grupo" },
-  { icono: "🥗", titulo: "Recetas fit y plan semanal", texto: "Menús para acelerar resultados" },
-  { icono: "📈", titulo: "Mi evolución", texto: "Gráficas de peso y sueño" },
-  { icono: "👩‍⚕️", titulo: "Consejos del Dr. Castellanos", texto: "Uno nuevo cada semana" },
+  { img: "/img/bascula.jpg", titulo: "Registro diario", texto: "Peso y sueño en 20 segundos" },
+  { img: "/img/trofeo.jpg", titulo: "Premio de 150 €", texto: "Ranking semanal del grupo" },
+  { img: "/img/r-garbanzos.jpg", titulo: "Recetas fit", texto: "Y plan semanal de comidas" },
+  { img: "/img/playa.jpg", titulo: "Mi evolución", texto: "Gráficas de peso y sueño" },
 ];

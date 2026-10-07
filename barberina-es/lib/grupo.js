@@ -208,9 +208,9 @@ export function novedades(s) {
     if (k === 0) ev.push({ t: "📦", txt: `${m.nombre} ha recibido su Barberina Max. Esta noche, primera cápsula.` });
     if (k === 1) {
       const p = perdaEn(m, 1);
-      ev.push({ t: "🔥", txt: `${m.nombre}: −${String(p.toFixed(1)).replace(".", ",")} kg en su primer día con el frasco`, destacado: p >= 1 });
+      ev.push({ t: "🔥", txt: `${m.nombre}: −${String(p.toFixed(1)).replace(".", ",")} kg en su primer día con Barberina Max`, destacado: p >= 1 });
     }
-    if (k === -1) ev.push({ t: "🚚", txt: `El frasco de ${m.nombre} ya está en reparto. Llega mañana.` });
+    if (k === -1) ev.push({ t: "🚚", txt: `El pedido de ${m.nombre} ya está en reparto. Llega mañana.` });
     if (k === 7) ev.push({ t: "🏅", txt: `${m.nombre} completó su primera semana: −${String(perdaEn(m, 7).toFixed(1)).replace(".", ",")} kg` });
     if (k > 1) {
       const antes = perdaEn(m, k - 1), ahora = perdaEn(m, k);
@@ -218,7 +218,7 @@ export function novedades(s) {
     }
   }
   const esperando = MIEMBROS.filter((m) => d < m.entrega).length;
-  if (esperando > 0) ev.push({ t: "⏳", txt: `${esperando} compañeras del grupo siguen esperando su frasco` });
+  if (esperando > 0) ev.push({ t: "⏳", txt: `${esperando} compañeras del grupo siguen esperando su pedido` });
   // nunca vazio
   if (ev.length < 2) ev.push({ t: "🌙", txt: "El grupo sigue firme: cápsula por la noche y registro por la mañana." });
   return ev.sort((a, b) => (b.destacado ? 1 : 0) - (a.destacado ? 1 : 0)).slice(0, 5);

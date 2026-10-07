@@ -158,17 +158,26 @@ export function marcarVisto(clave) {
 }
 
 // ---------------- frasco ----------------
-export function codigoValido(c) {
-  const x = String(c || "").trim().toUpperCase().replace(/\s+/g, "");
-  return CONFIG.codigos.includes(x);
-}
-export async function confirmarFrasco(codigo) {
-  if (!codigoValido(codigo)) return { ok: false };
+// A liberação é feita pela EQUIPE: quando a encomenda é entregue, grava-se
+// a entrega na tabela app_entregas do Supabase (ou app_usuarias.frasco_recibido_em).
+// O app consulta o RPC app_estado_entrega ao abrir e a cada 60 s — sem código.
+export async function comprobarEntrega() {
   const s = load();
-  s.frasco = { estado: "recibido", recibidoEn: hoyMadrid() };
-  save(s);
-  rpc("app_frasco_recibido", { p_tel: s.tel, p_pin: s.pin, p_codigo: String(codigo).trim().toUpperCase() });
-  return { ok: true, s };
+  if (!s.tel || frascoRecibido(s)) return { recibido: frascoRecibido(s), s };
+  const r = await rpc("app_estado_entrega", { p_tel: s.tel, p_pin: s.pin });
+  if (r?.ok && r.entregado) {
+    const st = load();
+    st.frasco = { estado: "recibido", recibidoEn: String(r.entregado_em || new Date().toISOString()).slice(0, 10) };
+    save(st);
+    return { recibido: true, nuevo: true, s: st };
+  }
+  // estado do envio informado pela equipe (opcional): preparando | enviado | reparto
+  if (r?.ok && r.estado) {
+    const st = load();
+    st.frasco = { ...st.frasco, envio: r.estado };
+    save(st);
+  }
+  return { recibido: false, s: load() };
 }
 
 // ---------------- registros ----------------
