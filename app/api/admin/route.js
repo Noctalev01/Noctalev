@@ -312,7 +312,7 @@ export async function POST(req) {
 
       const vistos = new Set();
       let compradoras = 0, liberadasAgora = 0, telefonesNovos = 0, semTelefone = 0;
-      const porProduto = { fase1: 0, fase2: 0, fase3: 0, studio: 0 };
+      const porProduto = { fase1: 0, fase2: 0, fase3: 0 };
       const novasLista = [];
       const { data: contatosAntes } = await db.from("configuracoes").select("chave, valor").like("chave", "contato:%");
       const telAntes = new Set((contatosAntes || []).filter((r) => r.valor?.telefone).map((r) => r.chave.slice(8)));

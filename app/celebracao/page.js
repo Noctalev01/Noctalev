@@ -85,6 +85,9 @@ export default function Celebracao() {
             <button onClick={fechar} className="mt-4 text-[13.5px] font-bold text-sub">
               Continuar na Fase 1 por enquanto
             </button>
+            <p className="text-[11.5px] text-sub font-semibold mt-2 px-4 leading-relaxed">
+              Sem pressa: a Fase 2 fica <b className="text-sub2">reservada para você</b> no topo do app — desbloqueie quando quiser.
+            </p>
           </>
         ) : (
           <>

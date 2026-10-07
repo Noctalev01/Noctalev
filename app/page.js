@@ -17,6 +17,7 @@ import { agendarLembretes, statusPermissao, pedirPermissao, notificarTeste, ativ
 import { rankingDoDia } from "../lib/turma";
 import { Icone, IconBox } from "../components/icones";
 import InstalarApp from "../components/InstalarApp";
+import { BannerFase2, CardFase2Pronta, deveLembrarFase2 } from "../components/LembreteFase2";
 
 function fmtKg(n) {
   return n.toFixed(1).replace(".", ",");
@@ -115,6 +116,8 @@ export default function Home() {
     <PageShell>
       {conquistaNova && <ModalConquista tipo={conquistaNova} onFechar={fecharConquista} />}
       {!conquistaNova && marco && <ModalMarco marco={marco} onFechar={fecharMarco} />}
+      {/* Fase 2 liberada mas não paga → lembrete fixo no topo (volta todo dia) */}
+      <BannerFase2 />
       <div className="flex items-center justify-between">
         <Logo size="text-[19px]" />
         <Link href="/config" className="w-10 h-10 rounded-full flex items-center justify-center font-extrabold text-[15px] text-[#3c2a10] overflow-hidden"
@@ -405,8 +408,11 @@ export default function Home() {
         );
       })()}
 
-      {/* FASE 2 — evolução do corpo (nunca menciona datas) */}
-      {preparou && (
+      {/* FASE 2 — evolução do corpo (nunca menciona datas).
+          Liberada e NÃO paga → card "pronta" que leva ao pagamento.
+          Paga → nada aqui (conteúdo fica na Receita). */}
+      {preparou && deveLembrarFase2(s) && <CardFase2Pronta />}
+      {preparou && !s.fase2Paga && !deveLembrarFase2(s) && (
         <div className="card mt-4 overflow-hidden" style={{ padding: 0 }}>
           <div className="relative h-[120px]">
             <img src="/img/fase2-shot.jpg" alt="" className="w-full h-full object-cover"
