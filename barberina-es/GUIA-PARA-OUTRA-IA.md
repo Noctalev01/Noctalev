@@ -12,7 +12,7 @@ PWA mobile em **espanhol de Espanha** para quem comprou **Barberina Max** (frasc
 - **Quando a equipe marca o pedido como `entregado` no Supabase**, o app libera sozinho (verifica ao abrir, ao voltar para o app e a cada 60 s) e mostra uma tela de celebração.
 
 Stack: Next.js 14 (App Router, JS) + Tailwind · Supabase (só chave **anon** no app) · Vercel.
-Código: pasta `barberina-es/` (repo GitHub `Noctalev01/barberina-es` ou `Noctalev01/Noctalev`, pasta `barberina-es`).
+Código: repo GitHub privado **`Noctalev01/barberina-es`** (raiz = app). Cópia também em `Noctalev01/Noctalev`, pasta `barberina-es/`.
 
 ---
 ## 2. Banco de dados (Supabase)
@@ -117,7 +117,7 @@ Variáveis de ambiente (Project → Settings → Environment Variables):
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | chave **anon public** (Supabase → Project Settings → API) |
 | `NEXT_PUBLIC_WHATSAPP` | `5554920011946` (WhatsApp da Camila, só dígitos) |
 | `NEXT_PUBLIC_GRUPO_MODO` | `demo` (ou `off`) |
-Se o projeto Vercel apontar para o repo `Noctalev01/Noctalev`, definir **Root Directory = `barberina-es`**. Framework: Next.js (detecta sozinho). Depois de mudar env vars → **Redeploy**.
+Importar o repo `Noctalev01/barberina-es` no Vercel (Add New → Project → Import), sem Root Directory. (Se usar o repo `Noctalev01/Noctalev`, definir **Root Directory = `barberina-es`**.) Framework: Next.js (detecta sozinho). Depois de mudar env vars → **Redeploy**.
 Domínio sugerido: `app.noctalev.online` (CNAME → `cname.vercel-dns.com` no Cloudflare, proxy desligado).
 
 Sem as variáveis do Supabase o app roda em **modo demonstração** (qualquer link `/a/xxx` entra como "María J.", dados só no aparelho).
